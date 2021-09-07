@@ -51,6 +51,10 @@ def linear_classifier_test( linear_input_size, linear_batch_size, linear_n_epoch
             fcn_linear.optimizer.zero_grad()
             x = reps_tr_in[indices,:] # (linear_batch_size, output_dim)
             l = trlab_in[indices] # (linear_batch_size)
+            
+            print(x.shape)
+            print(l.shape)
+            
  
             x = torch.Tensor( x ).view(linear_batch_size, -1,  ).to( xdevice )
             l = torch.Tensor( l ).view(linear_batch_size, -1 ).to( xdevice )
