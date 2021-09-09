@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import random
 import time
+from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 import torch
@@ -69,7 +70,7 @@ class NeuralNet(nn.Module):
         return output
     
     
-def train_and_eval_nn(my_nn, num_epochs_nn, criterion, optimizer, batch_size_nn, data_nn_train, labels_nn_train, 
+def train_and_eval_nn(device, my_nn, num_epochs_nn, criterion, optimizer, batch_size_nn, data_nn_train, labels_nn_train, 
                       data_nn_overtrain, labels_nn_overtrain,
                       data_nn_val, labels_nn_val, verbose = True, update = 10):
     
@@ -79,10 +80,10 @@ def train_and_eval_nn(my_nn, num_epochs_nn, criterion, optimizer, batch_size_nn,
 
     def send_through_net(data, labels):
         # data, labels input are np arrays
-        inputs = torch.from_numpy(data).float()
-        labels = torch.from_numpy(labels).long()
+        inputs = torch.from_numpy(data).float().to(device)
+        labels = torch.from_numpy(labels).long().to(device)
         outputs = my_nn(inputs)
-        loss = criterion(outputs, labels.reshape(-1,1).float())
+        loss = criterion(outputs, labels.reshape(-1,1).float()).to(device)
         return loss
     
     """
@@ -96,12 +97,15 @@ def train_and_eval_nn(my_nn, num_epochs_nn, criterion, optimizer, batch_size_nn,
     
     if verbose: print("Starting training...")
     
-    for epoch in range(num_epochs_nn):  # loop over the dataset multiple times
+    
+    my_nn.to(device) # make sure were using the gpu!
+        
+    for epoch in tqdm(range(num_epochs_nn)):  # loop over the dataset multiple times
         epochs.append(epoch)
         
         
         if epoch % update == 0:
-            if verbose: print("On epoch", epoch)
+            #if verbose: print("On epoch", epoch)
             
             """
             Overtraining check
@@ -109,7 +113,7 @@ def train_and_eval_nn(my_nn, num_epochs_nn, criterion, optimizer, batch_size_nn,
             with torch.no_grad():
                 epochs_overtrain.append(epoch)
                 loss = send_through_net(data_nn_overtrain, labels_nn_overtrain)
-                losses_overtrain.append(loss.detach().numpy())
+                losses_overtrain.append(loss.detach().cpu().numpy())
                 
         # make batches
         indices_list = torch.split(torch.randperm( data_nn_train.shape[0] ), batch_size_nn )
@@ -125,7 +129,7 @@ def train_and_eval_nn(my_nn, num_epochs_nn, criterion, optimizer, batch_size_nn,
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            local_losses.append(loss.detach().numpy())
+            local_losses.append(loss.detach().cpu().numpy())
           
         losses.append(np.mean(local_losses))
     
@@ -135,7 +139,6 @@ def train_and_eval_nn(my_nn, num_epochs_nn, criterion, optimizer, batch_size_nn,
     """
     Evaluate the neural net
     """
-    
     
   
     # since we're not training, we don't need to calculate the gradients for our outputs
@@ -157,7 +160,7 @@ def train_and_eval_nn(my_nn, num_epochs_nn, criterion, optimizer, batch_size_nn,
     return performance_stats
 
 
-def create_and_run_nn(input_shape, num_epochs, batch_size, update_epochs, lr, data_train_nn, labels_train, 
+def create_and_run_nn(device, input_shape, num_epochs, batch_size, update_epochs, lr, data_train_nn, labels_train, 
                       data_val_nn, labels_lct_train,
                       data_test_nn, labels_lct_test, verbose):
     # define device
@@ -165,10 +168,11 @@ def create_and_run_nn(input_shape, num_epochs, batch_size, update_epochs, lr, da
     # initialise the network
     
     local_nn = NeuralNet(input_shape = input_shape)
+
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(local_nn.parameters(), lr=lr)
     
-    performance_stats = train_and_eval_nn(local_nn, num_epochs, criterion, optimizer, batch_size, data_train_nn, labels_train, 
+    performance_stats = train_and_eval_nn(device, local_nn, num_epochs, criterion, optimizer, batch_size, data_train_nn, labels_train, 
                       data_val_nn, labels_lct_train,
                       data_test_nn, labels_lct_test, verbose = verbose, update = update_epochs)
     
