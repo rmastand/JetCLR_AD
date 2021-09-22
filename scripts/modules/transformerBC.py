@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # class for transformer network
-class Transformer( nn.Module ):
+class TransformerBC( nn.Module ):
     
     # define and intialize the structure of the neural network
     def __init__( self, input_dim, model_dim, output_dim, n_heads, dim_feedforward, n_layers, learning_rate, n_head_layers=2, head_norm=False, dropout=0.1, opt="adam" ):
@@ -28,6 +28,8 @@ class Transformer( nn.Module ):
         self.n_head_layers = n_head_layers
         self.head_norm = head_norm
         self.dropout = dropout
+        
+        self.decoder = nn.Linear(model_dim, 1)
         
         # define subnetworks
         self.embedding = nn.Linear(input_dim, model_dim)
@@ -70,7 +72,7 @@ class Transformer( nn.Module ):
             mask = None
         x = torch.transpose(x, 0, 1)
         # (n_constit, batch_size, model_dim)
-        x = self.embedding(x)
+        x = self.embedding(x)               
         x = self.transformer(x, mask=mask)
         if use_mask:
             # set masked constituents to zero
@@ -82,7 +84,7 @@ class Transformer( nn.Module ):
             x *= torch.transpose(pT, 0, 1)[:,:,None]
         # sum over sequence dim
         # (batch_size, model_dim)
-        x = x.sum(0)  
+        x = x.sum(0)                        
 
         return self.head(x, mult_reps)
 
@@ -123,24 +125,6 @@ class Transformer( nn.Module ):
                 x = layer(x)
             # shape either (model_dim) if no head, or (output_dim) if head exists
             return x  
-
-
-    def forward_batchwise( self, x, batch_size, use_mask=False, use_continuous_mask=False):
-        device = next(self.parameters()).device
-        with torch.no_grad():
-            if self.n_head_layers == 0:
-                rep_dim = self.model_dim
-                number_of_reps = 1
-            elif self.n_head_layers > 0:
-                rep_dim = self.output_dim
-                number_of_reps = self.n_head_layers+1
-            out = torch.empty( x.size(0), number_of_reps, rep_dim )
-            idx_list = torch.split( torch.arange( x.size(0) ), batch_size ) # so this loop would only be used if we split the data into batches. In practice, we don't use it
-            for idx in idx_list:
-                output = self(x[idx].to(device), use_mask=use_mask, use_continuous_mask=use_continuous_mask, mult_reps=True).detach().cpu()
-                out[idx] = output
-        return out
-
 
     def make_mask(self, pT_zero):
         '''

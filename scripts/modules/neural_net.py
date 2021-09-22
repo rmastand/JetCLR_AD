@@ -18,14 +18,6 @@ class NeuralNet(nn.Module):
     def __init__(self, input_shape):
         super(NeuralNet, self).__init__()
 
-        """
-        # First 1D convolutional layer, taking in 3 input channels (pt, eta, ph),
-        # outputting 32 convolutional featuvale, with a kernel size of 3, stride 1, padding 2
-        self.conv1 = nn.Conv1d(3, 100, 3, 1, 2)
-        # Second 1D convolutional layer, taking in the 32 input layers,
-        # outputting 64 convolutional features, with a kernel size of 3
-        self.conv2 = nn.Conv1d(100, 200, 3, 1, 2)
-        """
         # Designed to ensure that adjacent pixels are either all 0s or all active
         # with an input probability
         self.dropout1 = nn.Dropout2d(0.5)
@@ -41,19 +33,7 @@ class NeuralNet(nn.Module):
         
     # x represents our data
     def forward(self, x):
-        """
-        # Pass data through conv1
-        x = self.conv1(x)
-        # Use the rectified-linear activation function over x
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        # Run max pooling over x
-        x = F.max_pool2d(x, 2)
-        # Pass data through dropout1
-        x = self.dropout1(x)
-        # Flatten x with start_dim=1
-        """
+
         x = torch.flatten(x, 1)
         # Pass data through fc1
         x = F.relu(self.fc1(x))
@@ -103,7 +83,6 @@ def train_and_eval_nn(device, my_nn, num_epochs_nn, criterion, optimizer, batch_
     for epoch in tqdm(range(num_epochs_nn)):  # loop over the dataset multiple times
         epochs.append(epoch)
         
-        
         if epoch % update == 0:
             #if verbose: print("On epoch", epoch)
             
@@ -139,13 +118,12 @@ def train_and_eval_nn(device, my_nn, num_epochs_nn, criterion, optimizer, batch_
     """
     Evaluate the neural net
     """
-    
-  
+ 
     # since we're not training, we don't need to calculate the gradients for our outputs
     with torch.no_grad():
-        inputs = torch.from_numpy(data_nn_val).float()
-        outputs = my_nn(inputs)
-        predicted = np.round(outputs).detach().numpy().reshape(labels_nn_val.size)
+        inputs = torch.from_numpy(data_nn_val).float().to(device)
+        outputs = my_nn(inputs).detach().cpu().numpy()
+        predicted = np.round(outputs).reshape(labels_nn_val.size)
         # calculate auc 
         auc = roc_auc_score(labels_nn_val, outputs)
         
@@ -163,9 +141,6 @@ def train_and_eval_nn(device, my_nn, num_epochs_nn, criterion, optimizer, batch_
 def create_and_run_nn(device, input_shape, num_epochs, batch_size, update_epochs, lr, data_train_nn, labels_train, 
                       data_val_nn, labels_lct_train,
                       data_test_nn, labels_lct_test, verbose):
-    # define device
-    #xdevice = torch.device( "cuda" if torch.cuda.is_available() else "cpu" )
-    # initialise the network
     
     local_nn = NeuralNet(input_shape = input_shape)
 
