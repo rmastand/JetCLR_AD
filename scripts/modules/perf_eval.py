@@ -3,6 +3,7 @@ import os
 import sys
 import numpy as np
 from sklearn import metrics
+import matplotlib.pyplot as plt
 
 # import torch modules
 import torch
@@ -111,3 +112,19 @@ def linear_classifier_test_detailed( linear_input_size, linear_batch_size, linea
     out_dat = fcn_linear( torch.Tensor( reps_te_in ).view(-1, linear_input_size).to( xdevice ) ).detach().cpu().numpy()
     out_lbs = telab_in
     return out_dat, out_lbs, losses, test_losses, aucs, imtafes
+
+
+def plot_losses(list_of_plots, title, ylog = False):
+    """
+    list_of_plots = [(plot_x, plot_y, label)]
+    """
+    plt.figure()
+    for to_plot in list_of_plots:
+       
+        plt.plot(to_plot[0], to_plot[1], label=to_plot[2])
+    plt.legend()
+    if ylog:
+        plt.yscale("log")
+    plt.xlabel("Epochs")
+    plt.title(title)
+    plt.show()

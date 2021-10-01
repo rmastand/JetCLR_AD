@@ -13,7 +13,7 @@ import torch.nn.functional as F
 class Transformer( nn.Module ):
     
     # define and intialize the structure of the neural network
-    def __init__( self, input_dim, model_dim, output_dim, n_heads, dim_feedforward, n_layers, learning_rate, n_head_layers=2, head_norm=False, dropout=0.1, opt="adam" ):
+    def __init__( self, input_dim, model_dim, output_dim, n_heads, dim_feedforward, n_layers, learning_rate, n_head_layers=2, head_norm=False, dropout=0.1, opt="adam", BC = False ):
         
         super().__init__()
         
@@ -28,9 +28,11 @@ class Transformer( nn.Module ):
         self.n_head_layers = n_head_layers
         self.head_norm = head_norm
         self.dropout = dropout
+        self.BC = BC
         
         # define subnetworks
         self.embedding = nn.Linear(input_dim, model_dim)
+        self.decoder = nn.Linear(model_dim, 1)
         #self.embedding.weight.data *= 0.01
         #self.embedding.bias.data *= 0.01
         self.transformer = nn.TransformerEncoder(nn.TransformerEncoderLayer(model_dim, n_heads, dim_feedforward=dim_feedforward, dropout=dropout), n_layers)
@@ -83,8 +85,17 @@ class Transformer( nn.Module ):
         # sum over sequence dim
         # (batch_size, model_dim)
         x = x.sum(0)  
+        
+        if self.BC: # Run the net as a binary classfier
+            
+            x = self.head(x, mult_reps = False) # shape is (batchsize, model_dim)
+            # flatten the network from model_dim -> 1 for the binary classifier
+            x = self.decoder(x)
+            return torch.sigmoid(x) # for BCE loss
+           
+        else:
 
-        return self.head(x, mult_reps)
+            return self.head(x, mult_reps)
 
 
     def head(self, x, mult_reps):

@@ -45,7 +45,8 @@ class NeuralNet(nn.Module):
               
         # Apply softmax to x
         #output = F.log_softmax(x, dim=1)
-        output = torch.sigmoid(self.fc3(x)) # for BCE loss
+        output = torch.sigmoid(self.fc3(x)) # for BCE 
+        
 
         return output
     
