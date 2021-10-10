@@ -63,7 +63,7 @@ def cluster_and_prepare(dataset, n, R):
     return np.array(all_collisions)
 
     
-def get_highest_mass_constituents(dataset, R, deltaJ = False, ncon_store = 200):
+def get_highest_mass_constituents(dataset, R, j_per_e = 1, deltaJ = False, ncon_store = 200):
     
     """
     Takes a list (len N) of lists (len M), M unclustered particles, N collision events
@@ -71,6 +71,8 @@ def get_highest_mass_constituents(dataset, R, deltaJ = False, ncon_store = 200):
     Returns output for the jet CLR code : 3d numpy array (N collision events, 3 jet params, n jets)
     
     deltaJ: return eta - etaJ, phi - phiJ
+    ncon_store = number of constituents to store for each jet, including the jet itself
+        So to store 20 constituents from the 2 highest mass jets, set ncon_store = 20
     """
     
     all_collisions = []
@@ -93,54 +95,50 @@ def get_highest_mass_constituents(dataset, R, deltaJ = False, ncon_store = 200):
             jet_mass_dict[index] = jet.mass
             jet_nconstit_dict[index] = len(jet)
             
-        # get the highest mass jets
-        
+        # sort the jets by mass
         Z = [x for _,x in sorted(zip(jet_mass_dict.values(),jet_mass_dict.keys()))][::-1]
-        
-        high_mass_index = Z[0]
-        jet_info = np.array([[jets[high_mass_index].pt], [jets[high_mass_index].eta], [jets[high_mass_index].phi]])
-        next_mass_index = Z[1]
-        
-        # save n_consists
-        #n_constits_high_mass.append(jet_nconstit_dict[high_mass_index])
-        #n_consists_next_mass.append(jet_nconstit_dict[next_mass_index])
-        
-        jet_eta = jets[high_mass_index].eta
-        jet_phi = jets[high_mass_index].phi
-        
-        
-        # order constituents by pt
-        constit_pts = [constit.pt for constit in jets[high_mass_index]]
         bad_event = False
         
-        try:
-            Z = [x for _,x in sorted(zip(constit_pts,jets[high_mass_index]))][::-1]
-        except NotImplementedError:
-            bad_event = True
-            bad_indices.append(i)
+        jet_info_and_constits = [] # store pt eta phi for the jet and the constits for a given event
+        
+        # now go through the jets, starting with the highest mass jet
+        for njet in range(j_per_e):
+                                
+            mass_index = Z[njet]
+            jet_info = np.array([[jets[mass_index].pt], [jets[mass_index].eta], [jets[mass_index].phi]])
+            jet_info_and_constits.append(jet_info)
+                    
+            jet_eta = jets[mass_index].eta
+            jet_phi = jets[mass_index].phi
+        
+            # order constituents by pt
+            constit_pts = [constit.pt for constit in jets[mass_index]]
             
-        if not bad_event:
-            
-            # save the constituents for the high mass jet
-            if deltaJ:
-                collision_array = np.array([[constit.pt, constit.eta-jet_eta, phi_wrap(constit.phi-jet_phi)] for constit in Z]).transpose()
-                
-
-            else: 
-                collision_array = np.array([[constit.pt, constit.eta, constit.phi] for constit in Z]).transpose()
-            
-            # add the jet info as the first element
-            collision_array = np.concatenate((jet_info,collision_array), axis = 1) 
-            
-            # ZERO PAD
             try:
-                zero_pad = np.zeros((3,ncon_store-collision_array.shape[1]))
-                collision_array = np.concatenate((collision_array,zero_pad), axis = 1)
-            except ValueError:
-                #print("OVERFLOW: num constituents =",collision_array.shape[1])
-                collision_array = collision_array[:,:ncon_store]
-           
-            all_collisions.append(collision_array)
+                njet_consists = [x for _,x in sorted(zip(constit_pts,jets[mass_index]))][::-1]
+            except NotImplementedError:
+                bad_event = True
+                bad_indices.append(i)
+
+            if not bad_event:
+                # save the constituents for the high mass jet
+                if deltaJ:
+                    collision_array = np.array([[constit.pt, constit.eta-jet_eta, phi_wrap(constit.phi-jet_phi)] for constit in njet_consists]).transpose()
+                else: 
+                    collision_array = np.array([[constit.pt, constit.eta, constit.phi] for constit in njet_consists]).transpose()
+
+                # ZERO PAD
+                try:
+                    zero_pad = np.zeros((3,ncon_store-collision_array.shape[1]))
+                    collision_array = np.concatenate((collision_array,zero_pad), axis = 1)
+                except ValueError:
+                    #print("OVERFLOW: num constituents =",collision_array.shape[1])
+                    collision_array = collision_array[:,:ncon_store]
+                jet_info_and_constits.append(collision_array)
+        
+        if not bad_event: # only write out the jet if the event was "good"
+            concatenated_jet_info = np.concatenate(jet_info_and_constits, axis = 1)               
+            all_collisions.append(concatenated_jet_info)
             
       
     """ 
@@ -155,7 +153,6 @@ def get_highest_mass_constituents(dataset, R, deltaJ = False, ncon_store = 200):
     plt.show()
     """
     
-        
     return np.array(all_collisions), bad_indices
 
 
@@ -250,14 +247,34 @@ def pandas_to_features_2(input_frame):
     return dataset.to_numpy(), labels.to_numpy().reshape(len(labels))
 
 
-def select_jets(high_mass_consits,high_mass_labels, pt_cut, eta_cut):
+def select_jets_1(high_mass_consits,high_mass_labels, pt_cut, eta_cut):
 
-    # makes selection cuts on the jets for pt, eta
+    # makes selection cuts on the jets for pt, eta if there is ONE JET per event
     # pt_cut = [min, max]
     # eta_cut = [min, max]
     
     high_mass_jets = high_mass_consits[:,:,0] #(n_jets, 3) 3 = pt, eta, phi
     jet_selector = np.where((high_mass_jets[:,0] >= pt_cut[0]) & (high_mass_jets[:,0]<= pt_cut[1]) & (high_mass_jets[:,1] >= eta_cut[0]) &(high_mass_jets[:,1] <= eta_cut[1]))
 
+    return high_mass_consits[jet_selector], high_mass_labels[jet_selector]
+
+def select_jets_2(high_mass_consits,high_mass_labels, n_const, pt_cut_0, pt_cut_1, eta_cut_0, eta_cut_1):
+
+    # makes selection cuts on the jets for pt, eta if there are TWO JETS per event
+    # pt_cut = [min, max], 0 on the highest mass jet, 1 on the second
+    # eta_cut = [min, max]
+    
+    high_mass_jets = high_mass_consits[:,:,0]  #(n_jets, 3) 3 = pt, eta, phi
+    next_mass_jets = high_mass_consits[:,:,n_const+1] #(n_jets, 3) 3 = pt, eta, phi
+    
+    jet_selector = np.where((  high_mass_jets[:,0] >= pt_cut_0[0]) 
+                            & (high_mass_jets[:,0]<= pt_cut_0[1]) 
+                            & (high_mass_jets[:,1] >= eta_cut_0[0]) 
+                            & (high_mass_jets[:,1] <= eta_cut_0[1])
+                            & (next_mass_jets[:,0] >= pt_cut_1[0]) 
+                            & (next_mass_jets[:,0]<= pt_cut_1[1]) 
+                            & (next_mass_jets[:,1] >= eta_cut_1[0]) 
+                            & (next_mass_jets[:,1] <= eta_cut_1[1]))
+    
     return high_mass_consits[jet_selector], high_mass_labels[jet_selector]
     
