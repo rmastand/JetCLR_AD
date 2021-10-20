@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def contrastive_loss( x_i, x_j, xdevice, temperature, alpha ):
+def contrastive_loss( x_i, x_j, xdevice, temperature, alpha):
     batch_size = x_i.shape[0]
     z_i = F.normalize( x_i, dim=1 )
     z_j = F.normalize( x_j, dim=1 )
@@ -26,7 +26,7 @@ def contrastive_loss( x_i, x_j, xdevice, temperature, alpha ):
 
 
 
-def contrastive_loss_num_den( x, y, xdevice, temperature ):
+def contrastive_loss_num_den( x, y, xdevice, temperature, alpha ):
     # the numerator and denominator inside the log
     batch_size = x.shape[0]
     
@@ -40,14 +40,16 @@ def contrastive_loss_num_den( x, y, xdevice, temperature ):
     sim_ij = torch.diag( similarity_matrix,  batch_size ) # above the main diagonal
     sim_ji = torch.diag( similarity_matrix, -batch_size ) # below the main diagonal
     positives = torch.cat( [sim_ij, sim_ji], dim=0 )
-    nominator = torch.exp( positives / temperature )
     negatives_mask = ( ~torch.eye( 2*batch_size, 2*batch_size, dtype=bool ) ).float()
     negatives_mask = negatives_mask.to( xdevice )
     denominator = negatives_mask * torch.exp( similarity_matrix / temperature )
     
-    loss_numer = torch.sum(-torch.log( nominator  ))/( 2*batch_size )
-    loss_denom = torch.sum(-torch.log( torch.sum( denominator, dim=1 )  ))/( 2*batch_size )
-   
+    loss_partial_num = -1.0* ( positives / temperature)
+    loss_numer = torch.sum( loss_partial_num )/( 2*batch_size )
+    loss_partial_den = -torch.log( 1.0 / (torch.sum( denominator, dim=1 )).pow(exponent=alpha) )
+    loss_denom = torch.sum( loss_partial_den )/( 2*batch_size )
+    
+    # returns what you want to DECREASE
     return loss_numer, loss_denom
 
 

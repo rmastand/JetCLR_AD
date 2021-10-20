@@ -30,12 +30,17 @@ def translate_jets( batch, width=1.0 ):
     return shifted_batch
 
 
-def rotate_jets( batch ):
+def rotate_jets( batch, num_jets = 1 ):
     '''
     Input: batch of jets, shape (batchsize, 3, n_constit)
     dim 1 ordering: (pT, eta, phi)
     Output: batch of jets rotated independently in eta-phi, same shape as input
     '''
+    """
+    print(batch.shape)
+    split_batch = np.split(batch, num_jets, axis = 2)
+    print([x.shape for x in split_batch])
+    """
     rot_angle = np.random.rand(batch.shape[0])*2*np.pi
     c = np.cos(rot_angle)
     s = np.sin(rot_angle)
