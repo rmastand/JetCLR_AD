@@ -9,6 +9,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from modules.file_readers import phi_wrap
+from modules.jet_visualizers import plot_jets_phase_plane
+
 
 def translate_jets( batch, width=1.0 ):
     '''
@@ -111,3 +114,163 @@ def collinear_fill_jets( batch ):
             batchb[k,1,int(nzs[k]+j)] = batch[k,1,int(els[j])]
             batchb[k,2,int(nzs[k]+j)] = batch[k,2,int(els[j])]
     return batchb
+
+
+def apply_single_jet_augs(events, njets, center, rot, trs, dis, col, trsw = 1.0, ptst = 0.1, ptcm = 1.0):
+    """
+    INPUTS:
+    
+    events: np.array of size (# events, 3, # jets * (1 + # consts / jet))
+        The last index goes (in decreasing jet mass): jet1, consts in jet1, jet2, consts in jet2
+        There may be zero pads
+        NOTE that for the jet, pT eta phi are for the jet itself. The constituents may have pT eta phi RELATIVE to 
+            some center point
+        
+    njets: int with the number of jets contained in each event
+    
+    center: Contans a code to calculate the tuple containing (eta_c, phi_c) for the point that the CONSTITUENTS 
+                (not jet) are centered around
+        i.e. the constituents have (eta, phi) = (eta_orig - eta_c, phi_orig - phi_c) where eta_orig, phi_orig 
+            were output by the jet clustering algorithm
+            
+        center options: (describe the input constituents)
+        "none": does not affect the eta, phi of the stores constituents
+        "J1_delta": returns eta - etaJ, phi - phiJ where J represents the hardest jet 
+        "J1_phi_only_pi_2": shifts phi s.t. the hardest jet is centred at pi/2, NO change to eta
+     
+    OUTPUTS:
+
+    orig_events: np.array of size (# events, 3, # jets * (# consts / jet))
+    mod_events: np.array of size (# events, 3, # jets * (# consts / jet))
+    
+    PROCEDURE:
+    (1) split the event into njets jets. For each jet:
+        (2) Recenter all the constituents at eta, phi = 0, 0
+        (3) apply the augmentation
+        (4) un-center the jet
+    (5) return the combined event
+    
+    This modifies the jets, so it should be done on a COPY of the original array
+    """
+    
+    #l = 2
+    aug_events = events.copy()
+    
+    # get the etas, phis for the hardest mass jet (used for the recentering)
+    hardest_etas = aug_events[:,1,0]
+    hardest_phis = aug_events[:,2,0]
+    
+    # split the event into the jets
+    split_jets = np.split(events, njets, axis = 2)
+    aug_split_jets = np.split(aug_events, njets, axis = 2)
+   
+    # for storing the augmented SINGLE jets
+    orig_jets = []
+    modified_jets = []
+    
+    # remove the jets from the event representation, store
+    for i, subjet in enumerate(split_jets):
+        orig_jets.append(subjet[:,:,1:])
+
+    # now go through each jet
+    for i, subjet in enumerate(aug_split_jets):
+        
+        # get the jet eta, phi
+        jet_etas = subjet[:,1,0]
+        jet_phis = subjet[:,2,0]
+        
+        # take only the constituents (i.e. drop the 0th, which is the jet)
+        subjet = subjet[:,:,1:]
+        
+        # calculate the jet recentering coordinates
+        if center == "J1_phi_only_pi_2":
+            eta_shift = -jet_etas
+            phi_shift = hardest_phis - jet_phis - np.pi/2
+        elif center == "none":
+            eta_shift = -jet_etas
+            phi_shift = -jet_phis  
+        else:
+            print("ERROR: CENTER POSITION NOT CHOSEN")
+            
+        #plot_jets_phase_plane(subjet[l], subjet[l], 2, xlims=(-3,3), ylims=(-3,3))  
+            
+        # copy the array for each of the constituents
+        eta_shift = np.repeat(eta_shift, subjet.shape[2], axis = 0).reshape(subjet.shape[0],subjet.shape[2])
+        phi_shift = np.repeat(phi_shift, subjet.shape[2], axis = 0).reshape(subjet.shape[0],subjet.shape[2])   
+            
+        # recenter the jet
+        subjet[:,1,:] += eta_shift
+        subjet[:,2,:] += phi_shift
+        # phi wrapping
+        for e in range(subjet[:,2,:].shape[0]):
+            for c in range(subjet[:,2,:].shape[1]):
+                subjet[e,2,c] = phi_wrap(subjet[e,2,c])
+                
+        #plot_jets_phase_plane(subjet[l], subjet[l], 2, xlims=(-3,3), ylims=(-3,3))  
+
+        # apply the augmentation
+        if rot:
+            subjet = rotate_jets( subjet )
+        if trs:
+            subjet = translate_jets( subjet, width=trsw )
+        if dis:
+            subjet = distort_jets( subjet, strength=ptst, pT_clip_min=ptcm )
+        if col:
+            subjet = collinear_fill_jets( subjet )
+            subjet = collinear_fill_jets( subjet )
+            
+        #plot_jets_phase_plane(subjet[l], subjet[l], 2, xlims=(-3,3), ylims=(-3,3))  
+        
+        # un-recenter the jet
+        subjet[:,1,:] -= eta_shift
+        subjet[:,2,:] -= phi_shift
+        # phi wrapping
+        for e in range(subjet[:,2,:].shape[0]):
+            for c in range(subjet[:,2,:].shape[1]):
+                subjet[e,2,c] = phi_wrap(subjet[e,2,c])
+                
+        #plot_jets_phase_plane(subjet[l], subjet[l], 2, xlims=(-3,3), ylims=(-3,3))  
+        
+        modified_jets.append(subjet)
+    
+    # recombine the jets
+    orig_events = np.concatenate(orig_jets, axis = 2)
+    mod_events = np.concatenate(modified_jets, axis = 2)
+    
+    return(orig_events, mod_events)
+
+def remove_jet_and_rescale_pT(events, njets):
+    """
+    INPUTS: 
+    
+    events: np.array of size (# events, 3, # jets * (1 + # consts / jet))
+        The last index goes (in decreasing jet mass): jet1, consts in jet1, jet2, consts in jet2
+        There may be zero pads
+        NOTE that for the jet, pT eta phi are for the jet itself. The constituents may have pT eta phi RELATIVE to 
+            some center point
+        
+    njets: int with the number of jets contained in each event
+    
+    OUTPUTS:
+
+    consts_only: np.array of size (# events, 3, # jets * (# consts / jet))
+    """
+        
+    consts_only = []
+    split_jets = np.split(events, njets, axis = 2)
+
+    # now go through each jet
+    for i, subjet in enumerate(split_jets):
+        # Take only the constituents (i.e. drop the 0th, which is the jet)
+        subjet = subjet[:,:,1:]
+        consts_only.append(subjet)
+    
+    # combine the jets
+    consts_only = np.concatenate(consts_only, axis = 2)
+    
+    # rescale pTs
+    max_pt = np.max(consts_only[:,0,:])
+    pt_rescale_denom  = max_pt/ 10.
+    consts_only = rescale_pts( consts_only, pt_rescale_denom )
+    
+    return(consts_only)

@@ -63,14 +63,18 @@ def cluster_and_prepare(dataset, n, R):
     return np.array(all_collisions)
 
     
-def get_highest_mass_constituents(dataset, R, j_per_e = 1, deltaJ = False, ncon_store = 200):
+def get_highest_mass_constituents(dataset, R, center, j_per_e = 1, ncon_store = 200):
     
     """
     Takes a list (len N) of lists (len M), M unclustered particles, N collision events
     Clusters into n jets, returns the constituents for the highest MASS jet
     Returns output for the jet CLR code : 3d numpy array (N collision events, 3 jet params, n jets)
     
-    deltaJ: return eta - etaJ, phi - phiJ
+    center options:
+        "none": does not affect the eta, phi of the stores constituents
+        "J1_delta": returns eta - etaJ, phi - phiJ where J represents the hardest jet 
+        "J1_phi_only_pi_2": shifts phi s.t. the hardest jet is centred at pi/2, NO change to eta
+    
     ncon_store = number of constituents to store for each jet, including the jet itself
         So to store 20 constituents from the 2 highest mass jets, set ncon_store = 20
     """
@@ -99,6 +103,12 @@ def get_highest_mass_constituents(dataset, R, j_per_e = 1, deltaJ = False, ncon_
         Z = [x for _,x in sorted(zip(jet_mass_dict.values(),jet_mass_dict.keys()))][::-1]
         bad_event = False
         
+        # take the hardest jet eta, phi
+        hardest_index = Z[0]
+        jet1_eta = jets[hardest_index].eta
+        jet1_phi = jets[hardest_index].phi
+      
+        
         jet_info_and_constits = [] # store pt eta phi for the jet and the constits for a given event
         
         # now go through the jets, starting with the highest mass jet
@@ -107,9 +117,6 @@ def get_highest_mass_constituents(dataset, R, j_per_e = 1, deltaJ = False, ncon_
             mass_index = Z[njet]
             jet_info = np.array([[jets[mass_index].pt], [jets[mass_index].eta], [jets[mass_index].phi]])
             jet_info_and_constits.append(jet_info)
-                    
-            jet_eta = jets[mass_index].eta
-            jet_phi = jets[mass_index].phi
         
             # order constituents by pt
             constit_pts = [constit.pt for constit in jets[mass_index]]
@@ -121,12 +128,16 @@ def get_highest_mass_constituents(dataset, R, j_per_e = 1, deltaJ = False, ncon_
                 bad_indices.append(i)
 
             if not bad_event:
-                # save the constituents for the high mass jet
-                if deltaJ:
-                    collision_array = np.array([[constit.pt, constit.eta-jet_eta, phi_wrap(constit.phi-jet_phi)] for constit in njet_consists]).transpose()
-                else: 
+                if center == "J1_delta":
+                    collision_array = np.array([[constit.pt, constit.eta-jet1_eta, phi_wrap(constit.phi-jet1_phi)] for constit in njet_consists]).transpose()
+                elif center == "J1_phi_only_pi_2":
+                    collision_array = np.array([[constit.pt, constit.eta, phi_wrap(constit.phi-jet1_phi+np.pi/2.0)] for constit in njet_consists]).transpose()
+                elif center == "none": 
                     collision_array = np.array([[constit.pt, constit.eta, constit.phi] for constit in njet_consists]).transpose()
-
+                else:
+                    print("ERROR: CENTER POSITION NOT CHOSEN")
+              
+                    
                 # ZERO PAD
                 try:
                     zero_pad = np.zeros((3,ncon_store-collision_array.shape[1]))
