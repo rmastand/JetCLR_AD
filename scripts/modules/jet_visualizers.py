@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from modules.nsub import nsub, convert_constits_coords
+from modules.jet_vars import nsub, convert_constits_coords, mj, mjj
 
 def plot_jets_phase_plane(jet1, jet2, s, xlims=(-.5,.5), ylims=(-.5,.5)):
     
@@ -31,7 +31,7 @@ def plot_jets_phase_plane(jet1, jet2, s, xlims=(-.5,.5), ylims=(-.5,.5)):
     
     fig.show()
     
-def plot_nsubs(list_of_jets_1, list_of_jets_2, nbins = 20):
+def plot_nsubs(list_of_jets_1, list_of_jets_2, nbins = 20, title = ""):
     """
     INPUTS
     2 numpy arrays of size (# jets, 3, # constituents)where the 1-index goes through (pT, eta, phi)
@@ -57,15 +57,61 @@ def plot_nsubs(list_of_jets_1, list_of_jets_2, nbins = 20):
     fig, ax = plt.subplots(1,2, figsize = (14,6))
     ax[0].hist(taus_1_21, bins = bins, label = "Orig.", alpha = alpha)
     ax[0].hist(taus_2_21, bins = bins, label = "Mod.", alpha = alpha)
-    ax[0].set_xlabel("$\\tau_{21}$")
+    ax[0].set_xlabel("$\\tau_{21}$"+title)
     ax[0].set_ylabel("Counts")
     ax[0].legend()
     
     # plot tau 32
     ax[1].hist(taus_1_32, bins = bins, label = "Orig.", alpha = alpha)
     ax[1].hist(taus_2_32, bins = bins, label = "Mod.", alpha = alpha)
-    ax[1].set_xlabel("$\\tau_{32}$")
+    ax[1].set_xlabel("$\\tau_{32}$"+title)
     ax[1].set_ylabel("Counts")
     ax[1].legend()
     
     fig.show()
+    
+def plot_mj(list_of_jets_1, list_of_jets_2, bins = np.linspace(0,700,20), title = ""):
+    """
+    INPUTS
+    2 numpy arrays of size (# jets, 3, # constituents)where the 1-index goes through (pT, eta, phi)
+    """
+    
+    # calculate the jet mass
+    list_of_m1 = mj(list_of_jets_1)
+    list_of_m2 = mj(list_of_jets_2)
+    
+    alpha = 0.3
+
+    # plot 
+    fig, ax = plt.subplots(1,1, figsize = (6,6))
+    ax.hist(list_of_m1, bins = bins, label = "Orig.", alpha = alpha)
+    ax.hist(list_of_m2, bins = bins, label = "Mod.", alpha = alpha)
+    ax.set_xlabel("$m_{j}$"+title)
+    ax.set_ylabel("Counts")
+    ax.legend()
+    
+    fig.show()
+    
+def plot_mjj(list_jets1_orig, list_jets2_orig, list_jets1_mod, list_jets2_mod, bins = np.linspace(0,7000,20), title = ""):
+    """
+    INPUTS
+    2 numpy arrays of size (# jets, 3, # constituents)where the 1-index goes through (pT, eta, phi)
+    """
+    
+    # calculate the mjj
+    list_of_mjj_orig = mjj(list_jets1_orig, list_jets2_orig)
+    list_of_mjj_mod = mjj(list_jets1_mod, list_jets2_mod)
+    
+    alpha = 0.3
+
+    # plot 
+    fig, ax = plt.subplots(1,1, figsize = (6,6))
+    ax.hist(list_of_mjj_orig, bins = bins, label = "Orig.", alpha = alpha)
+    ax.hist(list_of_mjj_mod, bins = bins, label = "Mod.", alpha = alpha)
+    ax.set_xlabel("$m_{jj}$"+title)
+    ax.set_ylabel("Counts")
+    ax.legend()
+    
+    fig.show()
+    
+    

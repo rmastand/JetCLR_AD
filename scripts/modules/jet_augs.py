@@ -13,7 +13,7 @@ from modules.file_readers import phi_wrap
 from modules.jet_visualizers import plot_jets_phase_plane
 
 
-def translate_jets( batch, width=1.0 ):
+def translate_jets( batch, width=0.5 ):
     '''
     Input: batch of jets, shape (batchsize, 3, n_constit)
     dim 1 ordering: (pT, eta, phi)
@@ -114,6 +114,44 @@ def collinear_fill_jets( batch ):
             batchb[k,1,int(nzs[k]+j)] = batch[k,1,int(els[j])]
             batchb[k,2,int(nzs[k]+j)] = batch[k,2,int(els[j])]
     return batchb
+
+
+def shift_eta( batch, width=0.5 ):
+    '''
+    Input: batch of jets, shape (batchsize, 3, n_constit)
+    dim 1 ordering: (pT, eta, phi)
+    Output: batch of eta translated jets, same shape as input
+    
+    ** intended for use as an event augmentation **
+    '''
+    mask = (batch[:,0] > 0) # 1 for constituents with non-zero pT, 0 otherwise
+    ptp_eta  = np.ptp(batch[:,1,:], axis=-1, keepdims=True) # ptp = 'peak to peak' = max - min
+    low_eta  = -width*ptp_eta
+    high_eta = +width*ptp_eta
+    shift_eta = mask*np.random.uniform(low=low_eta, high=high_eta, size=(batch.shape[0], 1))
+    shift_phi = mask*np.random.uniform(low=0, high=0, size=(batch.shape[0], 1))
+    shift = np.stack([np.zeros((batch.shape[0], batch.shape[2])), shift_eta, shift_phi], 1)
+    shifted_batch = batch+shift
+    return shifted_batch
+
+
+def shift_phi( batch, width=1.0 ):
+    '''
+    Input: batch of jets, shape (batchsize, 3, n_constit)
+    dim 1 ordering: (pT, eta, phi)
+    Output: batch of phi translated jets, same shape as input
+    
+    ** intended for use as an event augmentation **
+    '''
+    mask = (batch[:,0] > 0) # 1 for constituents with non-zero pT, 0 otherwise
+    ptp_phi  = np.ptp(batch[:,2,:], axis=-1, keepdims=True) # ptp = 'peak to peak' = max - min
+    low_phi  = np.maximum(-width*ptp_phi, -np.pi-np.amin(batch[:,2,:], axis=1).reshape(ptp_phi.shape))
+    high_phi = np.minimum(+width*ptp_phi, +np.pi-np.amax(batch[:,2,:], axis=1).reshape(ptp_phi.shape))
+    shift_eta = mask*np.random.uniform(low=0, high=0, size=(batch.shape[0], 1))
+    shift_phi = mask*np.random.uniform(low=low_phi, high=high_phi, size=(batch.shape[0], 1))
+    shift = np.stack([np.zeros((batch.shape[0], batch.shape[2])), shift_eta, shift_phi], 1)
+    shifted_batch = batch+shift
+    return shifted_batch
 
 
 def apply_single_jet_augs(events, njets, center, rot, trs, dis, col, trsw = 1.0, ptst = 0.1, ptcm = 1.0):
