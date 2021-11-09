@@ -80,12 +80,15 @@ def mjj(constits_1, constits_2):
     
     for event_id in range(constits_1.shape[0]):
         
+        
+        
         # cluster jet 1
         collision_1 =  np.array([(constits_1[event_id][0,i],constits_1[event_id][1,i],constits_1[event_id][2,i],0) 
                                  for i in range(constits_1[event_id].shape[1])],
                      np.dtype([('pT', 'f8'), ('eta', 'f8'), ('phi', 'f8'), ('mass', 'f8')]))  
         sequence_1 = cluster(collision_1, R=100, p=-1) # ridiculously large R as we want to include everything
         jet_1 = sequence_1.inclusive_jets()[0]
+        
         
         # cluster jet 2
         collision_2 =  np.array([(constits_2[event_id][0,i],constits_2[event_id][1,i],constits_2[event_id][2,i],0) 

@@ -104,15 +104,16 @@ def collinear_fill_jets( batch ):
     nc = batch.shape[2]
     nzs = np.array( [ np.where( batch[:,0,:][i]>0.0)[0].shape[0] for i in range(len(batch)) ] )
     for k in range(len(batch)):
-        nzs1 = np.max( [ nzs[k], int(nc/2) ] )
-        zs1 = int(nc-nzs1)
-        els = np.random.choice( np.linspace(0,nzs1-1,nzs1), size=zs1, replace=False )
-        rs = np.random.uniform( size=zs1 )
-        for j in range(zs1):
+        zs1 = int(nc-nzs[k])
+        nfill = np.min( [ zs1, nzs[k] ] )
+        els = np.random.choice( np.linspace(0,nzs[k]-1,nzs[k]), size=nfill, replace=False )
+        rs = np.random.uniform( size=nfill )
+        for j in range(nfill):
             batchb[k,0,int(els[j])] = rs[j]*batch[k,0,int(els[j])]
             batchb[k,0,int(nzs[k]+j)] = (1-rs[j])*batch[k,0,int(els[j])]
             batchb[k,1,int(nzs[k]+j)] = batch[k,1,int(els[j])]
             batchb[k,2,int(nzs[k]+j)] = batch[k,2,int(els[j])]
+        
     return batchb
 
 
