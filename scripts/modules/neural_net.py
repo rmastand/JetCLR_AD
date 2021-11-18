@@ -25,10 +25,10 @@ class NeuralNet(nn.Module):
         self.dropout3 = nn.Dropout2d(0.25)
 
         # First fully connected layer
-        self.fc1 = nn.Linear(input_shape, 32) # first size is output of flatten
+        self.fc1 = nn.Linear(input_shape, 128) # first size is output of flatten
         # Second fully connected layer that outputs our 2 labels
-        self.fc2 = nn.Linear(32, 128)
-        self.fc3 = nn.Linear(128, 1)
+        self.fc2 = nn.Linear(128, 32)
+        self.fc3 = nn.Linear(32, 1)
         #self.fc4 = nn.Linear(64, 1)
         
     # x represents our data
