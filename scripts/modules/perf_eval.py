@@ -118,7 +118,7 @@ def plot_losses(list_of_plots, title, ylog = False):
     """
     list_of_plots = [(plot_x, plot_y, label)]
     """
-    plt.figure()
+    fig = plt.figure()
     for to_plot in list_of_plots:
        
         plt.plot(to_plot[0], to_plot[1], label=to_plot[2])
@@ -128,3 +128,4 @@ def plot_losses(list_of_plots, title, ylog = False):
     plt.xlabel("Epochs")
     plt.title(title)
     plt.show()
+    return fig

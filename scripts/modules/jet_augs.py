@@ -13,7 +13,7 @@ from modules.file_readers import phi_wrap
 from modules.jet_visualizers import plot_jets_phase_plane
 
 
-def translate_jets( batch, width=0.5 ):
+def translate_jets( batch, width=1.0 ):
     '''
     Input: batch of jets, shape (batchsize, 3, n_constit)
     dim 1 ordering: (pT, eta, phi)
