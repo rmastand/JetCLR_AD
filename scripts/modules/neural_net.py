@@ -21,12 +21,16 @@ class NeuralNet(nn.Module):
 
         # Designed to ensure that adjacent pixels are either all 0s or all active
         # with an input probability
-        self.dropout1 = nn.Dropout2d(0.25)
+        self.dropout1 = nn.Dropout2d(0.1)
+        self.dropout2 = nn.Dropout2d(0.1)
 
         # First fully connected layer
         self.fc1 = nn.Linear(input_shape, 64) # first size is output of flatten
         # Second fully connected layer that outputs our labels
-        self.fc2 = nn.Linear(64, 1)
+        self.bn1 = nn.BatchNorm1d(num_features=64)
+        self.fc2 = nn.Linear(64, 32)
+        self.bn2 = nn.BatchNorm1d(num_features=32)
+        self.fc3 = nn.Linear(32, 1)
 
         
     # x represents our data
@@ -37,12 +41,13 @@ class NeuralNet(nn.Module):
         x = F.relu(self.fc1(x))
         x = self.dropout1(x)
         x = F.relu(self.fc2(x))
+        x = self.dropout2(x)
+        x = self.fc3(x)
     
         # Apply softmax to x
         #output = F.log_softmax(x, dim=1)
         output = torch.sigmoid(x) # for BCE 
         
-
         return output
     
     
@@ -72,8 +77,6 @@ def train_and_eval_nn(device, my_nn, num_epochs_nn, criterion, optimizer, early_
     epochs_val = []
     losses_val = []
     
-    
-    
     if verbose: print("Starting training...")
     
     my_nn.to(device) # make sure were using the gpu!
@@ -82,7 +85,6 @@ def train_and_eval_nn(device, my_nn, num_epochs_nn, criterion, optimizer, early_
         
         if epoch % update == 0:
             #if verbose: print("On epoch", epoch)
-            
             """
             Overtraining check
             """
@@ -114,7 +116,6 @@ def train_and_eval_nn(device, my_nn, num_epochs_nn, criterion, optimizer, early_
             loss = send_through_net(batch_data, batch_labels)
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
             local_losses.append(loss.detach().cpu().numpy())
           
         losses.append(np.mean(local_losses))
@@ -132,6 +133,7 @@ def train_and_eval_nn(device, my_nn, num_epochs_nn, criterion, optimizer, early_
         inputs = torch.from_numpy(data_nn_test).float().to(device)
         outputs = my_nn(inputs).detach().cpu().numpy()
         predicted = np.round(outputs).reshape(labels_nn_test.size)
+
         # calculate auc 
         auc = roc_auc_score(labels_nn_test, outputs)
         

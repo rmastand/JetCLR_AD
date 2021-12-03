@@ -17,19 +17,24 @@ def plot_jets_phase_plane(jet1, jet2, s, xlims=(-.5,.5), ylims=(-.5,.5)):
     
     # plotting the eta-phi plane
     fig, ax = plt.subplots(1,2, figsize = (14,6))
-    ax[0].scatter(jet1[1,:][::-1], jet1[2,:][::-1], s=s*jet1[0,:][::-1])
-    ax[0].set_xlabel("$\Delta\eta$")
-    ax[0].set_ylabel("$\Delta\phi$")
+    ax[0].scatter(jet1[1,:][::-1], jet1[2,:][::-1], s=s*jet1[0,:][::-1], color = "mediumseagreen")
+    ax[0].set_xlabel("$\eta$")
+    ax[0].set_ylabel("$\phi$")
+
     ax[0].set_xlim(xlims)
     ax[0].set_ylim(ylims)
+    ax[0].text(0.6, 0.9, "Original Event", fontsize = 16, transform=ax[0].transAxes)
     
-    ax[1].scatter(jet2[1,:][::-1], jet2[2,:][::-1],s=s*jet2[0,:][::-1])
-    ax[1].set_xlabel("$\Delta\eta$")
-    ax[1].set_ylabel("$\Delta\phi$")
+    ax[1].scatter(jet2[1,:][::-1], jet2[2,:][::-1],s=s*jet2[0,:][::-1], color = "darkcyan")
+    ax[1].set_xlabel("$\eta$")
+    ax[1].set_ylabel("$\phi$")
     ax[1].set_xlim(xlims)
     ax[1].set_ylim(ylims)
+    ax[1].text(0.6, 0.9, "Modified Event", fontsize = 16, transform=ax[1].transAxes)
     
     fig.show()
+    
+    return fig
     
 def plot_nsubs(list_of_jets_1, list_of_jets_2, nbins = 20, title = ""):
     """
@@ -80,17 +85,20 @@ def plot_mj(list_of_jets_1, list_of_jets_2, bins = np.linspace(0,700,20), title 
     list_of_m1 = mj(list_of_jets_1)
     list_of_m2 = mj(list_of_jets_2)
     
-    alpha = 0.3
+    alpha = .7
 
     # plot 
-    fig, ax = plt.subplots(1,1, figsize = (6,6))
-    ax.hist(list_of_m1, bins = bins, label = "Orig.", alpha = alpha)
-    ax.hist(list_of_m2, bins = bins, label = "Mod.", alpha = alpha)
-    ax.set_xlabel("$m_{j}$"+title)
+    fig, ax = plt.subplots(1,1, figsize = (6,6))    
+    ax.hist(list_of_m1, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
+    plt.rcParams['hatch.linewidth'] = 2
+    ax.hist(list_of_m2, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
+    ax.set_xlabel("Jet mass [GeV]"+title)
     ax.set_ylabel("Counts")
-    ax.legend()
+    ax.legend(loc = "upper left")
     
     fig.show()
+    
+    return fig
     
 def plot_mjj(list_jets1_orig, list_jets2_orig, list_jets1_mod, list_jets2_mod, bins = np.linspace(0,7000,20), title = ""):
     """
