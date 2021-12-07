@@ -26,7 +26,7 @@ def contrastive_loss( x_i, x_j, xdevice, temperature, alpha):
 
 
 
-def contrastive_loss_num_den( x, y, xdevice, temperature, alpha ):
+def contrastive_loss_num_den( x, y, xdevice, alpha ):
     # the numerator and denominator inside the log
     batch_size = x.shape[0]
     
@@ -42,9 +42,9 @@ def contrastive_loss_num_den( x, y, xdevice, temperature, alpha ):
     positives = torch.cat( [sim_ij, sim_ji], dim=0 )
     negatives_mask = ( ~torch.eye( 2*batch_size, 2*batch_size, dtype=bool ) ).float()
     negatives_mask = negatives_mask.to( xdevice )
-    denominator = negatives_mask * torch.exp( similarity_matrix / temperature )
+    denominator = negatives_mask * torch.exp( similarity_matrix  )
     
-    loss_partial_num = -1.0* ( positives / temperature)
+    loss_partial_num = -1.0* ( positives )
     loss_numer = torch.sum( loss_partial_num )/( 2*batch_size )
     loss_partial_den = -torch.log( 1.0 / (torch.sum( denominator, dim=1 )).pow(exponent=alpha) )
     loss_denom = torch.sum( loss_partial_den )/( 2*batch_size )
