@@ -55,7 +55,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "dijet_dim_scan_21_07_12/0256dt2/"
+exp_id = "dijet_dim_scan_21_09_12/0048dt1/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -82,7 +82,7 @@ print("experiment: "+str(exp_id) , flush=True)
 
 path_to_save_dir = "/global/home/users/rrmastandrea/training_data/"
 #save_id_dir = "n_sig_8639_n_bkg_20000_n_nonzero_50_n_pad_0_n_jet_2/"
-save_id_dir = "n_sig_18918_n_bkg_20000_n_nonzero_50_n_pad_0_n_jet_2/"
+save_id_dir = "n_sig_25925_n_bkg_26000_n_nonzero_50_n_pad_0_n_jet_2/"
 
 grading = 50
 n_constits_max = 50
@@ -139,7 +139,7 @@ Define the transformer net
 # transformer hyperparams
 # input dim to the transformer -> (pt,eta,phi)
 input_dim = 3
-model_dim = 256
+model_dim = 48
 output_dim = model_dim
 dim_feedforward = model_dim
 n_heads = 4
@@ -152,7 +152,7 @@ cmask = True
 
 learning_rate_trans = 0.0001
 batch_size = 400
-temperature = .2
+temperature = .1
 
 # augmentations
 rot = True # rotations
@@ -441,68 +441,69 @@ if run_transformer:
 
 # In[6]:
 
-
-losses_pdf_name = expt_dir + "CLR_training_losses.pdf"
-pp = PdfPages(losses_pdf_name)
-
-
-"""
-Plot the training contrastive losses
-"""
-plot_clr_losses = []
-
-plot_clr_losses.append((range(len(losses_clr_num_jets[constit_num])),
-                       losses_clr_num_jets[constit_num], "CLR loss, "+str(constit_num) + " constits"))
-plot_clr_losses.append((loss_validation_num_jets[constit_num][0],
-                       loss_validation_num_jets[constit_num][1],"Val loss, "+str(constit_num) + " constits"))
-fig = plot_losses(plot_clr_losses, "Contrastive losses, training", True)  
-
-pp.savefig(fig)
+if run_transformer:
     
-"""
-Plot the LC + NN AUC
-"""
+    losses_pdf_name = expt_dir + "CLR_training_losses.pdf"
+    pp = PdfPages(losses_pdf_name)
 
-plot_LCT_stats = []
-plot_LCT_stats.append((lct_auc_num_jets[constit_num][0], lct_auc_num_jets[constit_num][1],
-                         "LC transformer, "+str(constit_num) + " constits"))
-plot_LCT_stats.append((lct_auc_num_jets[constit_num][0], lct_auc_num_jets[constit_num][2],
-                        "LC hidden layer, "+str(constit_num) + " constits"))
-plot_LCT_stats.append((lct_auc_num_jets[constit_num][0], lct_auc_num_jets[constit_num][3],
-                        "LC output layer, "+str(constit_num) + " constits"))
 
-fig = plot_losses(plot_LCT_stats, "ROC Area", False)  
-pp.savefig(fig)
+    """
+    Plot the training contrastive losses
+    """
+    plot_clr_losses = []
 
-plot_NN_stats = []
-plot_NN_stats.append((nn_auc_num_jets[constit_num][0], nn_auc_num_jets[constit_num][1],
-                         "NN transformer, "+str(constit_num) + " constits"))
-plot_NN_stats.append((nn_auc_num_jets[constit_num][0], nn_auc_num_jets[constit_num][2],
-                        "NN hidden layer, "+str(constit_num) + " constits"))
-plot_NN_stats.append((nn_auc_num_jets[constit_num][0], nn_auc_num_jets[constit_num][3],
-                        "NN output layer, "+str(constit_num) + " constits"))
+    plot_clr_losses.append((range(len(losses_clr_num_jets[constit_num])),
+                           losses_clr_num_jets[constit_num], "CLR loss, "+str(constit_num) + " constits"))
+    plot_clr_losses.append((loss_validation_num_jets[constit_num][0],
+                           loss_validation_num_jets[constit_num][1],"Val loss, "+str(constit_num) + " constits"))
+    fig = plot_losses(plot_clr_losses, "Contrastive losses, training", True)  
 
-fig = plot_losses(plot_NN_stats, "ROC Area", False)  
-pp.savefig(fig)
-    
-"""
-Plot the training contrastive losses num + denom
-"""
+    pp.savefig(fig)
 
-plot_num_val_losses = []
-plot_num_val_losses.append((range(len(losses_clr_numer_num_jets[constit_num])),
-                       -np.array(losses_clr_numer_num_jets[constit_num]), str(constit_num) + " constits"))
-fig = plot_losses(plot_num_val_losses, "-Alignment losses (should increase)", True)  
-pp.savefig(fig)
+    """
+    Plot the LC + NN AUC
+    """
 
-plot_den_val_losses = []
-plot_den_val_losses.append((range(len(losses_clr_denom_num_jets[constit_num])),
-                       np.array(losses_clr_denom_num_jets[constit_num]),  str(constit_num) + " constits"))
-fig = plot_losses(plot_den_val_losses, "Uniformity losses (should decrease)", True)  
-pp.savefig(fig)
+    plot_LCT_stats = []
+    plot_LCT_stats.append((lct_auc_num_jets[constit_num][0], lct_auc_num_jets[constit_num][1],
+                             "LC transformer, "+str(constit_num) + " constits"))
+    plot_LCT_stats.append((lct_auc_num_jets[constit_num][0], lct_auc_num_jets[constit_num][2],
+                            "LC hidden layer, "+str(constit_num) + " constits"))
+    plot_LCT_stats.append((lct_auc_num_jets[constit_num][0], lct_auc_num_jets[constit_num][3],
+                            "LC output layer, "+str(constit_num) + " constits"))
 
-    
-pp.close()
+    fig = plot_losses(plot_LCT_stats, "ROC Area", False)  
+    pp.savefig(fig)
+
+    plot_NN_stats = []
+    plot_NN_stats.append((nn_auc_num_jets[constit_num][0], nn_auc_num_jets[constit_num][1],
+                             "NN transformer, "+str(constit_num) + " constits"))
+    plot_NN_stats.append((nn_auc_num_jets[constit_num][0], nn_auc_num_jets[constit_num][2],
+                            "NN hidden layer, "+str(constit_num) + " constits"))
+    plot_NN_stats.append((nn_auc_num_jets[constit_num][0], nn_auc_num_jets[constit_num][3],
+                            "NN output layer, "+str(constit_num) + " constits"))
+
+    fig = plot_losses(plot_NN_stats, "ROC Area", False)  
+    pp.savefig(fig)
+
+    """
+    Plot the training contrastive losses num + denom
+    """
+
+    plot_num_val_losses = []
+    plot_num_val_losses.append((range(len(losses_clr_numer_num_jets[constit_num])),
+                           -np.array(losses_clr_numer_num_jets[constit_num]), str(constit_num) + " constits"))
+    fig = plot_losses(plot_num_val_losses, "-Alignment losses (should increase)", True)  
+    pp.savefig(fig)
+
+    plot_den_val_losses = []
+    plot_den_val_losses.append((range(len(losses_clr_denom_num_jets[constit_num])),
+                           np.array(losses_clr_denom_num_jets[constit_num]),  str(constit_num) + " constits"))
+    fig = plot_losses(plot_den_val_losses, "Uniformity losses (should decrease)", True)  
+    pp.savefig(fig)
+
+
+    pp.close()
 
 
 # # Run final LCT on the transformer representations
@@ -540,52 +541,6 @@ lct_test_reps = F.normalize( loaded_net.forward_batchwise( torch.Tensor( data_te
 
 print("Data loaded!")
 
-
-# In[9]:
-
-
-bins = np.linspace(-.3,.3,30)
-
-
-labels_bkg_inds = np.where(labels_train==0)
-labels_sig_inds = np.where(labels_train==1)
-                         
-    
-
-
-for i in range(3):
-    
-    all_events = lct_train_reps[:,i,:].flatten()
-    bkg_events = lct_train_reps[:,i,:][labels_bkg_inds].flatten()
-    sig_events = lct_train_reps[:,i,:][labels_sig_inds].flatten()
-    
-    a = .4
-    plt.figure()
-    plt.hist(all_events, bins = bins, alpha = a, label = "all")
-    plt.hist(bkg_events, bins = bins, alpha = a, label = "bkg")
-    plt.hist(sig_events, bins = bins, alpha = a, label = "sig")
-    plt.xlabel("Layer "+str(i)+" normalized reps")
-    plt.legend()
-    plt.show()
-    
-   
-
-    
-    
-    
-"""
-for i in range(3):
-    print(data_train[:,i,:].shape)
-
-    plt.figure()
-    plt.hist(data_train[:,i,:].flatten())
-    plt.show()
-    
-    
-"""
-
-
-# In[10]:
 
 
 
@@ -652,7 +607,7 @@ print("LCT data saved")
 
 
 
-num_epochs_nn = 800
+num_epochs_nn = 1200
 batch_size_nn = 400
 update_epochs_nn = 10
 input_shape = model_dim
