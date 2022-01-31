@@ -43,7 +43,7 @@ torch.cuda.empty_cache()
 
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 device = cuda.get_current_device()
 device.reset()
 
@@ -56,7 +56,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "SB_ratios_22_18_01/0kS_16kB_48d/"
+exp_id = "SB_ratios_22_18_01/0p1kS_16kB_48d/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -83,7 +83,7 @@ print("experiment: "+str(exp_id) , flush=True)
 
 path_to_save_dir = "/global/home/users/rrmastandrea/training_data/"
 #save_id_dir = "n_sig_8639_n_bkg_20000_n_nonzero_50_n_pad_0_n_jet_2/"
-save_id_dir = "nCLR_sig_0_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
+save_id_dir = "nCLR_sig_100_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
 
