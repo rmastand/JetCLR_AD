@@ -40,11 +40,10 @@ torch.cuda.empty_cache()
 
 
 from numba import cuda 
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 device = cuda.get_current_device()
 device.reset()
 
-
-# In[2]:
 
 
 # More parameters / computing setup
@@ -52,7 +51,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "dijet_dim_scan_21_09_12/0048dt1/"
+exp_id = "SB_ratios_22_18_01/0kS_16kB_512d/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -78,7 +77,8 @@ print("experiment: "+str(exp_id) , flush=True)
 
 
 path_to_save_dir = "/global/home/users/rrmastandrea/training_data/"
-save_id_dir = "n_sig_25925_n_bkg_26000_n_nonzero_50_n_pad_0_n_jet_2/"
+save_id_dir = "nBC_sig_0_nBC_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
+TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
 grading = 50
 n_constits_max = 50
@@ -87,12 +87,16 @@ n_jets = 2
 path_to_data = path_to_save_dir+save_id_dir
 print(path_to_data)
 
+path_to_test = path_to_save_dir+TEST_dir
+print(path_to_test)
+
 data_train = np.load(path_to_data+"data_train.npy")
 labels_train = np.load(path_to_data+"labels_train.npy")
 data_val = np.load(path_to_data+"data_val.npy")
 labels_val = np.load(path_to_data+"labels_val.npy")
-data_test_f = np.load(path_to_data+"data_test_f.npy")
-labels_test_f = np.load(path_to_data+"labels_test_f.npy")
+data_test_f = np.load(path_to_test+"data.npy")
+labels_test_f = np.load(path_to_test+"labels.npy")
+
 
 # rescale
 data_train = remove_jet_and_rescale_pT(data_train, n_jets)
@@ -108,6 +112,7 @@ print( "BC test data shape: " + str( data_test_f.shape ), flush=True)
 print( "BC test labels shape: " + str( labels_test_f.shape ), flush=True)
 
 
+
 # # Run the transformer architecture as a BC
 
 # In[4]:
@@ -119,7 +124,7 @@ Define the Binary Classifier transformer net
 
 # transformer hyperparams
 input_dim = 3
-model_dim = 48
+model_dim = 400
 output_dim = model_dim
 dim_feedforward = model_dim
 n_heads = 4
@@ -131,13 +136,13 @@ opt = "adam"
 mask= False
 cmask = True
 
-learning_rate_trans = 0.0001
-batch_size = 400
+learning_rate_trans = 0.00005
+batch_size = 512
 
 early_stop = True
 
 if early_stop:
-    early_stopping = EarlyStopping(patience = 20)
+    early_stopping = EarlyStopping(patience = 10)
 
 
 netBC = Transformer( input_dim, model_dim, output_dim, n_heads, dim_feedforward, 
@@ -167,8 +172,8 @@ if run_BC_transformer:
     losses_BC_num_jets = {i:[] for i in range(grading,n_constits_max+grading,grading)}
     loss_validation_num_jets = {i:[[],[]] for i in range(grading,n_constits_max+grading,grading)} #epoch, loss
 
-    n_epochs = 1600
-    loss_check_epoch = 10
+    n_epochs = 400
+    loss_check_epoch = 5
     verbal_epoch = 10
 
     for constit_num in range(grading,n_constits_max+grading,grading):
@@ -198,6 +203,7 @@ if run_BC_transformer:
                 DATA PREPARATION
                 """
                 x_i = data_train[indices,:,:]
+                print(x_i.shape)
                 labels_i = labels_train[indices]
 
                 x_i = torch.Tensor( x_i ).transpose(1,2).to( device ) # shape (batchsize, 2, 3)
@@ -275,8 +281,10 @@ if run_BC_transformer:
                     loss_val_e = np.mean( np.array( local_val_losses ) )
                     loss_validation_num_jets[constit_num][1].append(loss_val_e)
                     
+                    
+                    
                     if early_stop:
-                        early_stopping(loss)
+                        early_stopping(loss_val_e)
             
             if early_stopping.early_stop:
                 break
@@ -377,71 +385,6 @@ pp.savefig(fig)
 plt.show()
 
 pp.close()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-    
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
 
 
 

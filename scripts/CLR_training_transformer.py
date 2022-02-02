@@ -27,7 +27,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # load custom modules required for jetCLR training
-from modules.jet_augs import apply_single_jet_augs, translate_jets, rotate_jets, rescale_pts, distort_jets, collinear_fill_jets, crop_jets
+from modules.jet_augs import apply_single_jet_augs, translate_jets, rotate_jets, rescale_pts, distort_jets, collinear_fill_jets, crop_jets, remove_jet_and_rescale_pT
 from modules.jet_augs import shift_eta, shift_phi
 from modules.transformer import Transformer
 from modules.losses import contrastive_loss, align_loss, uniform_loss, contrastive_loss_num_den
@@ -43,7 +43,7 @@ torch.cuda.empty_cache()
 
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 device = cuda.get_current_device()
 device.reset()
 
@@ -56,7 +56,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "SB_ratios_22_18_01/0kS_16kB_48d/"
+exp_id = "SB_ratios_22_18_01/16kS_16kB_128d/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -83,7 +83,7 @@ print("experiment: "+str(exp_id) , flush=True)
 
 path_to_save_dir = "/global/home/users/rrmastandrea/training_data/"
 #save_id_dir = "n_sig_8639_n_bkg_20000_n_nonzero_50_n_pad_0_n_jet_2/"
-save_id_dir = "nCLR_sig_0_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
+save_id_dir = "nCLR_sig_16000_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
 
@@ -117,6 +117,14 @@ print( "BC val labels shape: " + str( labels_val.shape ), flush=True)
 print( "BC test data shape: " + str( data_test_f.shape ), flush=True)
 print( "BC test labels shape: " + str( labels_test_f.shape ), flush=True)
 
+cropped_train = remove_jet_and_rescale_pT(data_train, n_jets)
+cropped_val = remove_jet_and_rescale_pT(data_val, n_jets)
+cropped_test = remove_jet_and_rescale_pT(data_test_f, n_jets)
+
+
+print(cropped_train.shape)
+print(cropped_val.shape)
+print(cropped_test.shape)
 
 # Plot num constituents
 
@@ -134,9 +142,6 @@ def get_num_constits(dataset):
 
 # # Define the Transformer Net
 
-# In[4]:
-
-
 """
 Define the transformer net
 """
@@ -144,7 +149,7 @@ Define the transformer net
 # transformer hyperparams
 # input dim to the transformer -> (pt,eta,phi)
 input_dim = 3
-model_dim = 48
+model_dim = 128
 output_dim = model_dim
 dim_feedforward = model_dim
 n_heads = 4
@@ -178,8 +183,6 @@ net.to( device )
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau( net.optimizer, factor=0.2 )
 
 
-# In[5]:
-
 
 run_transformer = True
 train_num_only = False
@@ -189,7 +192,7 @@ check_with_LCT = True
 check_with_NN = True
 
 n_epochs = 800
-loss_check_epoch = 20  # do validation loss, run a LCT and NN on the current reps
+loss_check_epoch = 5  # do validation loss, run a LCT and NN on the current reps
 verbal_epoch = 10
 
 if run_transformer:
@@ -240,7 +243,7 @@ if run_transformer:
                 x_i, x_j = apply_single_jet_augs(x_i, 2, center, rot, trs, dis, col)
                 x_j = shift_phi(x_j)
                 x_j = shift_eta(x_j)
-
+                
                 # rescaling pT
                 max_pt = np.max(x_i[:,0,:])
                 pt_rescale_denom  = max_pt/ 10.
@@ -348,15 +351,18 @@ if run_transformer:
                     """
                     Run a LCT for signal vs background (supervised)
                     """
-                    lct_train_reps = F.normalize( net.forward_batchwise( torch.Tensor( data_test_f ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
-                    lct_test_reps = F.normalize( net.forward_batchwise( torch.Tensor( data_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
-                    #lct_train_reps = net.forward_batchwise( torch.Tensor( data_test_f ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
-                    #lct_test_reps = net.forward_batchwise( torch.Tensor( data_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+                    
+                    print("Training shape:", cropped_test.shape)
 
+                
+                    lct_train_reps = F.normalize( net.forward_batchwise( torch.Tensor( cropped_test ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+                    lct_test_reps = F.normalize( net.forward_batchwise( torch.Tensor( cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+                    #lct_train_reps = net.forward_batchwise( torch.Tensor( cropped_test ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+                    #lct_test_reps = net.forward_batchwise( torch.Tensor( cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+                    
+                    
                     print("Doing a short LCT...")
                     
-                    
-
                     lct_auc_num_jets[constit_num][0].append(epoch)
                     with torch.no_grad():
                         for trait in range(lct_train_reps.shape[1]): # going through the layers of the transformer
@@ -376,10 +382,11 @@ if run_transformer:
                     Run a NN for signal vs background (supervised)
                     """
                     
-                    lct_train_reps = F.normalize( net.forward_batchwise( torch.Tensor( data_test_f ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
-                    lct_test_reps = F.normalize( net.forward_batchwise( torch.Tensor( data_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
-                    #lct_train_reps = net.forward_batchwise( torch.Tensor( data_test_f ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
-                    #lct_test_reps = net.forward_batchwise( torch.Tensor( data_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+
+                    lct_train_reps = F.normalize( net.forward_batchwise( torch.Tensor( cropped_test ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+                    lct_test_reps = F.normalize( net.forward_batchwise( torch.Tensor( cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+                    #lct_train_reps = net.forward_batchwise( torch.Tensor( cropped_test ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+                    #lct_test_reps = net.forward_batchwise( torch.Tensor( cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
                     print(lct_train_reps.shape)
                     print("Doing a short NN...")
                     num_epochs_nn = 800
@@ -424,7 +431,6 @@ if run_transformer:
         t1 = time.time()
 
         print( "JETCLR TRAINING DONE, time taken: " + str( np.round( t1-t0, 2 ) ), flush=True)
-
 
         # save out results
         print( "saving out data/results", flush=True)
@@ -534,18 +540,20 @@ loaded_net.eval()
 
 # Running the final transformer on the binary classification data
 
+
 print("Loading data into net...")
-lct_train_reps = F.normalize( loaded_net.forward_batchwise( torch.Tensor( data_train ).transpose(1,2), data_train.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
-lct_val_reps = F.normalize( loaded_net.forward_batchwise( torch.Tensor( data_val ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
-lct_test_reps = F.normalize( loaded_net.forward_batchwise( torch.Tensor( data_test_f ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+lct_train_reps = F.normalize( loaded_net.forward_batchwise( torch.Tensor( cropped_train ).transpose(1,2), data_train.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+lct_val_reps = F.normalize( loaded_net.forward_batchwise( torch.Tensor( cropped_val ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+lct_test_reps = F.normalize( loaded_net.forward_batchwise( torch.Tensor( cropped_test ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
 
 
-#lct_train_reps = loaded_net.forward_batchwise( torch.Tensor( data_train ).transpose(1,2), data_train.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
-#lct_val_reps =  loaded_net.forward_batchwise( torch.Tensor( data_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
-#lct_test_reps =  loaded_net.forward_batchwise( torch.Tensor( data_test_f ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+#lct_train_reps = loaded_net.forward_batchwise( torch.Tensor( cropped_train ).transpose(1,2), data_train.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+#lct_val_reps =  loaded_net.forward_batchwise( torch.Tensor( cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+#lct_test_reps =  loaded_net.forward_batchwise( torch.Tensor( cropped_test ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+
+
 
 print("Data loaded!")
-
 
 
 

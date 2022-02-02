@@ -140,7 +140,10 @@ def train_and_eval_nn(device, my_nn, num_epochs_nn, criterion, optimizer, early_
         fpr, tpr, _ = roc_curve(labels_nn_test, outputs)
 
         total = labels_nn_test.size
-        correct = (predicted == labels_nn_test).sum()    
+        correct = 0.0
+        for i in range(len(predicted)):
+            if predicted[i] == labels_nn_test[i]:
+                correct += 1.0
     
     performance_stats = {"epochs":epochs, "losses": losses, "val_epochs":epochs_val, "val_losses":losses_val, 
               "tpr":tpr, "fpr":fpr, "acc":correct / total , "auc":auc}
