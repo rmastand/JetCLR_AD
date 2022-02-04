@@ -35,7 +35,6 @@ from modules.perf_eval import get_perf_stats, linear_classifier_test, plot_losse
 from modules.neural_net import create_and_run_nn
 from modules.utils import LRScheduler, EarlyStopping
 
-
 seed = 1
 torch.manual_seed(seed)
 random.seed(seed)
@@ -44,7 +43,7 @@ torch.cuda.empty_cache()
 
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 device = cuda.get_current_device()
 device.reset()
 
@@ -57,7 +56,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "SB_ratios_22_18_01/16kS_16kB_48d/"
+exp_id = "SB_ratios_22_18_01/12kS_16kB_48d/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -84,7 +83,7 @@ print("experiment: "+str(exp_id) , flush=True)
 
 path_to_save_dir = "/global/home/users/rrmastandrea/training_data/"
 #save_id_dir = "n_sig_8639_n_bkg_20000_n_nonzero_50_n_pad_0_n_jet_2/"
-save_id_dir = "nCLR_sig_16000_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
+save_id_dir = "nCLR_sig_12000_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
 
@@ -168,7 +167,7 @@ temperature = .1
 early_stop = True
 
 if early_stop:
-    early_stopping = EarlyStopping(patience = 2)
+    early_stopping = EarlyStopping(patience = 10)
 
 # augmentations
 rot = True # rotations
@@ -197,7 +196,7 @@ train_den_only = False
 check_with_LCT = True
 check_with_NN = True
 
-n_epochs = 400
+n_epochs = 800
 loss_check_epoch = 20  # do validation loss, run a LCT and NN on the current reps
 verbal_epoch = 10
 
@@ -353,12 +352,8 @@ if run_transformer:
                     loss_val_e = np.mean( np.array( local_val_losses ) )
                     loss_validation_num_jets[constit_num][1].append(loss_val_e)
                     
-                    print("here")
-                    
                     if early_stop:
                         early_stopping(loss_val_e)
-            
-            
 
                 if check_with_LCT:
                     """
@@ -437,9 +432,9 @@ if run_transformer:
                         fig = plot_losses(plot_nn_losses, "NN"+str(trait)+" losses, training", True)  
 
 
-
             if early_stopping.early_stop:
                 break
+
                             
 
         t1 = time.time()

@@ -54,8 +54,10 @@ class EarlyStopping():
         self.best_loss = None
         self.early_stop = False
     def __call__(self, val_loss):
+        
         if self.best_loss == None:
             self.best_loss = val_loss
+        
         elif self.best_loss - val_loss > self.min_delta:
             self.best_loss = val_loss
             # reset counter if validation loss improves

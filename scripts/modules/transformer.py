@@ -138,6 +138,7 @@ class Transformer( nn.Module ):
 
     def forward_batchwise( self, x, batch_size, use_mask=False, use_continuous_mask=False):
         device = next(self.parameters()).device
+        
         with torch.no_grad():
             if self.n_head_layers == 0:
                 rep_dim = self.model_dim

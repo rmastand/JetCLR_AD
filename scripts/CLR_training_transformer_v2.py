@@ -44,7 +44,7 @@ torch.cuda.empty_cache()
 
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 device = cuda.get_current_device()
 device.reset()
 
@@ -57,7 +57,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "SB_ratios_22_18_01/16kS_16kB_48d/"
+exp_id = "SB_ratios_22_18_01/0kS_16kB_48d/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -84,7 +84,7 @@ print("experiment: "+str(exp_id) , flush=True)
 
 path_to_save_dir = "/global/home/users/rrmastandrea/training_data/"
 #save_id_dir = "n_sig_8639_n_bkg_20000_n_nonzero_50_n_pad_0_n_jet_2/"
-save_id_dir = "nCLR_sig_16000_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
+save_id_dir = "nCLR_sig_8000_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
 
@@ -168,7 +168,7 @@ temperature = .1
 early_stop = True
 
 if early_stop:
-    early_stopping = EarlyStopping(patience = 2)
+    early_stopping = EarlyStopping(patience = 10)
 
 # augmentations
 rot = True # rotations
@@ -190,14 +190,14 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau( net.optimizer, factor=0.
 
 
 
-run_transformer = True
+run_transformer = False
 train_num_only = False
 train_den_only = False
 
 check_with_LCT = True
 check_with_NN = True
 
-n_epochs = 400
+n_epochs = 800
 loss_check_epoch = 20  # do validation loss, run a LCT and NN on the current reps
 verbal_epoch = 10
 
@@ -353,12 +353,8 @@ if run_transformer:
                     loss_val_e = np.mean( np.array( local_val_losses ) )
                     loss_validation_num_jets[constit_num][1].append(loss_val_e)
                     
-                    print("here")
-                    
                     if early_stop:
                         early_stopping(loss_val_e)
-            
-            
 
                 if check_with_LCT:
                     """
@@ -554,6 +550,7 @@ loaded_net.eval()
 
 # Running the final transformer on the binary classification data
 
+print(cropped_train.shape)
 
 print("Loading data into net...")
 lct_train_reps = F.normalize( loaded_net.forward_batchwise( torch.Tensor( cropped_train ).transpose(1,2), data_train.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
