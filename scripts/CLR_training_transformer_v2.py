@@ -57,7 +57,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "SB_ratios_22_18_01/0kS_16kB_48d/"
+exp_id = "SB_ratios_22_18_01/0kS_16kB_36d/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -84,7 +84,7 @@ print("experiment: "+str(exp_id) , flush=True)
 
 path_to_save_dir = "/global/home/users/rrmastandrea/training_data/"
 #save_id_dir = "n_sig_8639_n_bkg_20000_n_nonzero_50_n_pad_0_n_jet_2/"
-save_id_dir = "nCLR_sig_8000_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
+save_id_dir = "nCLR_sig_0_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
 
@@ -150,7 +150,7 @@ Define the transformer net
 # transformer hyperparams
 # input dim to the transformer -> (pt,eta,phi)
 input_dim = 3
-model_dim = 48
+model_dim = 36
 output_dim = model_dim
 dim_feedforward = model_dim
 n_heads = 4
@@ -190,7 +190,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau( net.optimizer, factor=0.
 
 
 
-run_transformer = False
+run_transformer = True
 train_num_only = False
 train_den_only = False
 

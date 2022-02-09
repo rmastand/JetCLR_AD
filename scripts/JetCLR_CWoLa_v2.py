@@ -45,7 +45,7 @@ torch.cuda.empty_cache()
 
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 device = cuda.get_current_device()
 device.reset()
 
@@ -115,7 +115,7 @@ print( "STS labels shape: " + str( STS_labels.shape ), flush=True)
 # In[3]:
 
 
-model_dim = 12
+model_dim = 24
 
 exp_id = "SB_ratios_22_18_01/0kS_16kB_"+str(model_dim)+"d/"
 
