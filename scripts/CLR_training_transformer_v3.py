@@ -35,7 +35,11 @@ from modules.perf_eval import get_perf_stats, linear_classifier_test, plot_losse
 from modules.neural_net import create_and_run_nn
 from modules.utils import LRScheduler, EarlyStopping
 
-seed = 1
+
+# RUN PARMETERS
+seed = 3
+model_dim = 256
+
 torch.manual_seed(seed)
 random.seed(seed)
 np.random.seed(seed)
@@ -56,7 +60,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "SB_ratios_22_18_01/12kS_16kB_48d/"
+exp_id = "dim_scan_22_02_19/dim_"+str(model_dim)+"_seed_"+str(seed)+"/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -81,9 +85,9 @@ print("experiment: "+str(exp_id) , flush=True)
 # In[3]:
 
 
-path_to_save_dir = "/global/home/users/rrmastandrea/training_data/"
-#save_id_dir = "n_sig_8639_n_bkg_20000_n_nonzero_50_n_pad_0_n_jet_2/"
-save_id_dir = "nCLR_sig_12000_nCLR_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
+path_to_save_dir = "/global/home/users/rrmastandrea/training_data_vf/"
+CLR_dir = "nCLR_sig_10000_nCLR_bkg_10000_n_nonzero_50_n_pad_0_n_jet_2/"
+BC_dir = "nBC_sig_85000_nBC_bkg_85000_n_nonzero_50_n_pad_0_n_jet_2/"
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
 
@@ -91,19 +95,21 @@ grading = 50
 n_constits_max = 50
 n_jets = 2
 
-path_to_data = path_to_save_dir+save_id_dir
-print(path_to_data)
+path_to_CLR = path_to_save_dir+CLR_dir
+print(path_to_CLR)
+
+path_to_BC = path_to_save_dir+BC_dir
+print(path_to_BC)
 
 path_to_test = path_to_save_dir+TEST_dir
 print(path_to_test)
 
-
-clr_train = np.load(path_to_data+"clr_train.npy")
-clr_val = np.load(path_to_data+"clr_val.npy")
-data_train = np.load(path_to_data+"data_train.npy")
-labels_train = np.load(path_to_data+"labels_train.npy")
-data_val = np.load(path_to_data+"data_val.npy")
-labels_val = np.load(path_to_data+"labels_val.npy")
+clr_train = np.load(path_to_CLR+"clr_train.npy")
+clr_val = np.load(path_to_CLR+"clr_val.npy")
+data_train = np.load(path_to_BC+"data_train.npy")
+labels_train = np.load(path_to_BC+"labels_train.npy")
+data_val = np.load(path_to_BC+"data_val.npy")
+labels_val = np.load(path_to_BC+"labels_val.npy")
 data_test_f = np.load(path_to_test+"data.npy")
 labels_test_f = np.load(path_to_test+"labels.npy")
 
@@ -116,15 +122,35 @@ print( "BC val data shape: " + str( data_val.shape ), flush=True)
 print( "BC val labels shape: " + str( labels_val.shape ), flush=True)
 print( "BC test data shape: " + str( data_test_f.shape ), flush=True)
 print( "BC test labels shape: " + str( labels_test_f.shape ), flush=True)
+print()
+print()
 
 cropped_train = remove_jet_and_rescale_pT(data_train, n_jets)
 cropped_val = remove_jet_and_rescale_pT(data_val, n_jets)
 cropped_test = remove_jet_and_rescale_pT(data_test_f, n_jets)
 
 
-print(cropped_train.shape)
-print(cropped_val.shape)
-print(cropped_test.shape)
+# make some even smaller datasets to train the validation NN, LCT
+percentage = 0.3
+
+num_val_epoch_train = int(percentage*cropped_train.shape[0])
+val_epoch_cropped_train = cropped_train[:num_val_epoch_train,:,:]
+val_epoch_cropped_train_labels = labels_train[:num_val_epoch_train]
+
+num_val_epoch_val = int(percentage*cropped_val.shape[0])
+val_epoch_cropped_val = cropped_train[:num_val_epoch_val,:,:]
+val_epoch_cropped_val_labels = labels_val[:num_val_epoch_val]
+
+
+print("BC training set shape:", cropped_train.shape)
+print("BC validation set shape:", cropped_val.shape)
+print("BC test set shape:", cropped_test.shape)
+
+print("BC epoch check training set shape:", val_epoch_cropped_train.shape)
+print("BC epoch check validation set shape:", val_epoch_cropped_val.shape)
+
+print()
+print()
 
 # Plot num constituents
 
@@ -149,7 +175,6 @@ Define the transformer net
 # transformer hyperparams
 # input dim to the transformer -> (pt,eta,phi)
 input_dim = 3
-model_dim = 48
 output_dim = model_dim
 dim_feedforward = model_dim
 n_heads = 4
@@ -167,7 +192,7 @@ temperature = .1
 early_stop = True
 
 if early_stop:
-    early_stopping = EarlyStopping(patience = 10)
+    early_stopping = EarlyStopping(patience = 2)
 
 # augmentations
 rot = True # rotations
@@ -186,8 +211,6 @@ net.to( device )
 
 # define lr scheduler
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau( net.optimizer, factor=0.2 )
-
-
 
 run_transformer = True
 train_num_only = False
@@ -351,7 +374,7 @@ if run_transformer:
 
                     loss_val_e = np.mean( np.array( local_val_losses ) )
                     loss_validation_num_jets[constit_num][1].append(loss_val_e)
-                    
+                                        
                     if early_stop:
                         early_stopping(loss_val_e)
 
@@ -360,13 +383,13 @@ if run_transformer:
                     Run a LCT for signal vs background (supervised)
                     """
                     
-                    print("Training shape:", cropped_test.shape)
+                    print("Training shape:", val_epoch_cropped_train.shape)
 
                 
-                    lct_train_reps = F.normalize( net.forward_batchwise( torch.Tensor( cropped_test ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
-                    lct_test_reps = F.normalize( net.forward_batchwise( torch.Tensor( cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
-                    #lct_train_reps = net.forward_batchwise( torch.Tensor( cropped_test ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
-                    #lct_test_reps = net.forward_batchwise( torch.Tensor( cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+                    lct_train_reps = F.normalize( net.forward_batchwise( torch.Tensor( val_epoch_cropped_train ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+                    lct_test_reps = F.normalize( net.forward_batchwise( torch.Tensor( val_epoch_cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+                    #lct_train_reps = net.forward_batchwise( torch.Tensor( val_epoch_cropped_train ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+                    #lct_test_reps = net.forward_batchwise( torch.Tensor( val_epoch_cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
                     
                     
                     print("Doing a short LCT...")
@@ -377,11 +400,11 @@ if run_transformer:
                             # run the LCT
                             #reg = LinearRegression().fit(lct_train_reps[:,trait,:], labels_test_f)
                             ridge = Ridge(alpha=1.0)
-                            ridge.fit(lct_train_reps[:,trait,:], labels_test_f)
+                            ridge.fit(lct_train_reps[:,trait,:], val_epoch_cropped_train_labels)
                             
                             # make the prediction
                             predictions = ridge.predict(lct_test_reps[:,trait,:])
-                            auc = roc_auc_score(labels_val, predictions)
+                            auc = roc_auc_score(val_epoch_cropped_val_labels, predictions)
                             lct_auc_num_jets[constit_num][1+trait].append(auc)
                             
                 
@@ -391,10 +414,10 @@ if run_transformer:
                     """
                     
 
-                    lct_train_reps = F.normalize( net.forward_batchwise( torch.Tensor( cropped_test ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
-                    lct_test_reps = F.normalize( net.forward_batchwise( torch.Tensor( cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
-                    #lct_train_reps = net.forward_batchwise( torch.Tensor( cropped_test ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
-                    #lct_test_reps = net.forward_batchwise( torch.Tensor( cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+                    lct_train_reps = F.normalize( net.forward_batchwise( torch.Tensor( val_epoch_cropped_train ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+                    lct_test_reps = F.normalize( net.forward_batchwise( torch.Tensor( val_epoch_cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
+                    #lct_train_reps = net.forward_batchwise( torch.Tensor( val_epoch_cropped_train ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
+                    #lct_test_reps = net.forward_batchwise( torch.Tensor( val_epoch_cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu().numpy()
                     print(lct_train_reps.shape)
                     print("Doing a short NN...")
                     num_epochs_nn = 800
@@ -409,9 +432,9 @@ if run_transformer:
                         # run the NN
                         performance_stats_nn = create_and_run_nn(device, input_shape, num_epochs_nn, batch_size_nn, 
                                                                  update_epochs_nn,lr_nn, 
-                                                                  lct_train_reps[:,trait,:], labels_test_f, 
-                                                                  lct_train_reps[:,trait,:], labels_test_f, # actually no validation set
-                                                                  lct_test_reps[:,trait,:], labels_val, True)
+                                                                  lct_train_reps[:,trait,:], val_epoch_cropped_train_labels, 
+                                                                  lct_train_reps[:,trait,:], val_epoch_cropped_train_labels, # actually no validation set
+                                                                  lct_test_reps[:,trait,:], val_epoch_cropped_val_labels, True)
 
 
 
@@ -432,9 +455,9 @@ if run_transformer:
                         fig = plot_losses(plot_nn_losses, "NN"+str(trait)+" losses, training", True)  
 
 
+
             if early_stopping.early_stop:
                 break
-
                             
 
         t1 = time.time()

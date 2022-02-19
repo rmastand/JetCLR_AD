@@ -122,4 +122,6 @@ def plot_mjj(list_jets1_orig, list_jets2_orig, list_jets1_mod, list_jets2_mod, b
     
     fig.show()
     
+    return fig
+    
     

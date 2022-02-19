@@ -115,7 +115,7 @@ print( "STS labels shape: " + str( STS_labels.shape ), flush=True)
 # In[3]:
 
 
-model_dim = 24
+model_dim = 128
 
 exp_id = "SB_ratios_22_18_01/0kS_16kB_"+str(model_dim)+"d/"
 
