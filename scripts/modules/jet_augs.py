@@ -252,11 +252,11 @@ def apply_single_jet_augs(events, njets, center, rot, trs, dis, col, trsw = 1.0,
             subjet = rotate_jets( subjet )
         if trs:
             subjet = translate_jets( subjet, width=trsw )
-        if dis:
-            subjet = distort_jets( subjet, strength=ptst, pT_clip_min=ptcm )
         if col:
             subjet = collinear_fill_jets( subjet )
             subjet = collinear_fill_jets( subjet )
+        if dis:
+            subjet = distort_jets( subjet, strength=ptst, pT_clip_min=ptcm )
             
         #plot_jets_phase_plane(subjet[l], subjet[l], 2, xlims=(-3,3), ylims=(-3,3))  
         

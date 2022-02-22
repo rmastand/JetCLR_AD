@@ -37,8 +37,8 @@ from modules.utils import LRScheduler, EarlyStopping
 
 
 # RUN PARMETERS
-seed = 2
-model_dim = 256
+seed = 1
+model_dim = 128
 
 torch.manual_seed(seed)
 random.seed(seed)
@@ -138,7 +138,7 @@ val_epoch_cropped_train = cropped_train[:num_val_epoch_train,:,:]
 val_epoch_cropped_train_labels = labels_train[:num_val_epoch_train]
 
 num_val_epoch_val = int(percentage*cropped_val.shape[0])
-val_epoch_cropped_val = cropped_train[:num_val_epoch_val,:,:]
+val_epoch_cropped_val = cropped_val[:num_val_epoch_val,:,:]
 val_epoch_cropped_val_labels = labels_val[:num_val_epoch_val]
 
 
@@ -186,7 +186,7 @@ mask= False
 cmask = True
 
 learning_rate_trans = 0.0001
-batch_size = 400
+batch_size = 256
 temperature = .1
 
 early_stop = True
