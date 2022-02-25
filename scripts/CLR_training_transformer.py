@@ -38,7 +38,7 @@ from modules.utils import LRScheduler, EarlyStopping
 
 # RUN PARMETERS
 seed = 1
-model_dim = 1024
+model_dim = 512
 
 torch.manual_seed(seed)
 random.seed(seed)

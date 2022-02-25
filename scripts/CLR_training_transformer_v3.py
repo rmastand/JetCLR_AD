@@ -37,7 +37,7 @@ from modules.utils import LRScheduler, EarlyStopping
 
 
 # RUN PARMETERS
-seed = 4
+seed = 3
 model_dim = 512
 
 torch.manual_seed(seed)
@@ -186,7 +186,7 @@ mask= False
 cmask = True
 
 learning_rate_trans = 0.0001
-batch_size = 256
+batch_size = 400
 temperature = .1
 
 early_stop = True

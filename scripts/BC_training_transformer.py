@@ -33,7 +33,7 @@ from modules.jet_augs import remove_jet_and_rescale_pT
 from modules.utils import LRScheduler, EarlyStopping
 
 # RUN PARMETERS
-seed = 2
+seed = 1
 model_dim = 512
 
 torch.manual_seed(seed)
@@ -87,16 +87,17 @@ grading = 50
 n_constits_max = 50
 n_jets = 2
 
-path_to_data = path_to_save_dir+save_id_dir
-print(path_to_data)
+path_to_BC = path_to_save_dir+BC_dir
+print(path_to_BC)
 
 path_to_test = path_to_save_dir+TEST_dir
 print(path_to_test)
 
-data_train = np.load(path_to_data+"data_train.npy")
-labels_train = np.load(path_to_data+"labels_train.npy")
-data_val = np.load(path_to_data+"data_val.npy")
-labels_val = np.load(path_to_data+"labels_val.npy")
+
+data_train = np.load(path_to_BC+"data_train.npy")
+labels_train = np.load(path_to_BC+"labels_train.npy")
+data_val = np.load(path_to_BC+"data_val.npy")
+labels_val = np.load(path_to_BC+"labels_val.npy")
 data_test_f = np.load(path_to_test+"data.npy")
 labels_test_f = np.load(path_to_test+"labels.npy")
 
@@ -137,7 +138,7 @@ mask= False
 cmask = True
 
 learning_rate_trans = 0.0001
-batch_size = 256
+batch_size = 400
 
 early_stop = True
 
@@ -203,7 +204,6 @@ if run_BC_transformer:
                 DATA PREPARATION
                 """
                 x_i = data_train[indices,:,:]
-                print(x_i.shape)
                 labels_i = labels_train[indices]
 
                 x_i = torch.Tensor( x_i ).transpose(1,2).to( device ) # shape (batchsize, 2, 3)
