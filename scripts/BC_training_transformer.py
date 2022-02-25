@@ -32,15 +32,18 @@ from modules.perf_eval import get_perf_stats, linear_classifier_test, plot_losse
 from modules.jet_augs import remove_jet_and_rescale_pT
 from modules.utils import LRScheduler, EarlyStopping
 
+# RUN PARMETERS
+seed = 2
+model_dim = 512
 
-torch.manual_seed(0)
-random.seed(0)
-np.random.seed(0)
+torch.manual_seed(seed)
+random.seed(seed)
+np.random.seed(seed)
 torch.cuda.empty_cache()
 
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="3"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 device = cuda.get_current_device()
 device.reset()
 
@@ -51,7 +54,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "SB_ratios_22_18_01/0kS_16kB_512d/"
+exp_id = "dim_scan_22_02_19/dim_"+str(model_dim)+"_seed_"+str(seed)+"/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -76,8 +79,8 @@ print("experiment: "+str(exp_id) , flush=True)
 # In[3]:
 
 
-path_to_save_dir = "/global/home/users/rrmastandrea/training_data/"
-save_id_dir = "nBC_sig_0_nBC_bkg_16000_n_nonzero_50_n_pad_0_n_jet_2/"
+path_to_save_dir = "/global/home/users/rrmastandrea/training_data_vf/"
+BC_dir = "nBC_sig_85000_nBC_bkg_85000_n_nonzero_50_n_pad_0_n_jet_2/"
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
 grading = 50
@@ -97,8 +100,6 @@ labels_val = np.load(path_to_data+"labels_val.npy")
 data_test_f = np.load(path_to_test+"data.npy")
 labels_test_f = np.load(path_to_test+"labels.npy")
 
-
-# rescale
 data_train = remove_jet_and_rescale_pT(data_train, n_jets)
 data_val = remove_jet_and_rescale_pT(data_val, n_jets)
 data_test_f = remove_jet_and_rescale_pT(data_test_f, n_jets)
@@ -124,7 +125,6 @@ Define the Binary Classifier transformer net
 
 # transformer hyperparams
 input_dim = 3
-model_dim = 400
 output_dim = model_dim
 dim_feedforward = model_dim
 n_heads = 4
@@ -136,8 +136,8 @@ opt = "adam"
 mask= False
 cmask = True
 
-learning_rate_trans = 0.00005
-batch_size = 512
+learning_rate_trans = 0.0001
+batch_size = 256
 
 early_stop = True
 
@@ -172,8 +172,8 @@ if run_BC_transformer:
     losses_BC_num_jets = {i:[] for i in range(grading,n_constits_max+grading,grading)}
     loss_validation_num_jets = {i:[[],[]] for i in range(grading,n_constits_max+grading,grading)} #epoch, loss
 
-    n_epochs = 400
-    loss_check_epoch = 5
+    n_epochs = 800
+    loss_check_epoch = 20
     verbal_epoch = 10
 
     for constit_num in range(grading,n_constits_max+grading,grading):

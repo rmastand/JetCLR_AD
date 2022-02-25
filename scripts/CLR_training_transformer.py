@@ -37,8 +37,8 @@ from modules.utils import LRScheduler, EarlyStopping
 
 
 # RUN PARMETERS
-seed = 5
-model_dim = 256
+seed = 1
+model_dim = 1024
 
 torch.manual_seed(seed)
 random.seed(seed)
@@ -186,13 +186,13 @@ mask= False
 cmask = True
 
 learning_rate_trans = 0.0001
-batch_size = 256
+batch_size = 400
 temperature = .1
 
 early_stop = True
 
 if early_stop:
-    early_stopping = EarlyStopping(patience = 2)
+    early_stopping = EarlyStopping(patience = 10)
 
 # augmentations
 rot = True # rotations
