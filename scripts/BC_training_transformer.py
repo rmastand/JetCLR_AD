@@ -33,8 +33,8 @@ from modules.jet_augs import remove_jet_and_rescale_pT
 from modules.utils import LRScheduler, EarlyStopping
 
 # RUN PARMETERS
-seed = 1
-model_dim = 512
+seed = 3
+model_dim = 8
 
 torch.manual_seed(seed)
 random.seed(seed)
@@ -43,7 +43,7 @@ torch.cuda.empty_cache()
 
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 device = cuda.get_current_device()
 device.reset()
 
@@ -137,13 +137,13 @@ opt = "adam"
 mask= False
 cmask = True
 
-learning_rate_trans = 0.0001
+learning_rate_trans = 0.00001
 batch_size = 400
 
 early_stop = True
 
 if early_stop:
-    early_stopping = EarlyStopping(patience = 10)
+    early_stopping = EarlyStopping()
 
 
 netBC = Transformer( input_dim, model_dim, output_dim, n_heads, dim_feedforward, 
@@ -173,8 +173,8 @@ if run_BC_transformer:
     losses_BC_num_jets = {i:[] for i in range(grading,n_constits_max+grading,grading)}
     loss_validation_num_jets = {i:[[],[]] for i in range(grading,n_constits_max+grading,grading)} #epoch, loss
 
-    n_epochs = 800
-    loss_check_epoch = 20
+    n_epochs = 5000
+    loss_check_epoch = 10
     verbal_epoch = 10
 
     for constit_num in range(grading,n_constits_max+grading,grading):

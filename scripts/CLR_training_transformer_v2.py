@@ -37,8 +37,8 @@ from modules.utils import LRScheduler, EarlyStopping
 
 
 # RUN PARMETERS
-seed = 2
-model_dim = 512
+seed = 4
+model_dim = 8
 
 torch.manual_seed(seed)
 random.seed(seed)
@@ -192,7 +192,7 @@ temperature = .1
 early_stop = True
 
 if early_stop:
-    early_stopping = EarlyStopping(patience = 10)
+    early_stopping = EarlyStopping()
 
 # augmentations
 rot = True # rotations
@@ -220,7 +220,7 @@ check_with_LCT = True
 check_with_NN = True
 
 n_epochs = 800
-loss_check_epoch = 20  # do validation loss, run a LCT and NN on the current reps
+loss_check_epoch = 10  # do validation loss, run a LCT and NN on the current reps
 verbal_epoch = 10
 
 if run_transformer:
