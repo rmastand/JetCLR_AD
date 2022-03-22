@@ -37,8 +37,8 @@ from modules.utils import LRScheduler, EarlyStopping
 
 
 # RUN PARMETERS
-seed = 3
-model_dim = 8
+seed = 2
+model_dim = 128
 
 torch.manual_seed(seed)
 random.seed(seed)
@@ -60,7 +60,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "dim_scan_22_02_19/dim_"+str(model_dim)+"_seed_"+str(seed)+"/"
+exp_id = "SB_ratios_22_03_16/50kS_50kB_dim"+str(model_dim)+"_seed_"+str(seed)+"/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -86,7 +86,7 @@ print("experiment: "+str(exp_id) , flush=True)
 
 
 path_to_save_dir = "/global/home/users/rrmastandrea/training_data_vf/"
-CLR_dir = "nCLR_sig_10000_nCLR_bkg_10000_n_nonzero_50_n_pad_0_n_jet_2/"
+CLR_dir = "nCLR_sig_50000_nCLR_bkg_50000_n_nonzero_50_n_pad_0_n_jet_2/"
 BC_dir = "nBC_sig_85000_nBC_bkg_85000_n_nonzero_50_n_pad_0_n_jet_2/"
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
@@ -131,7 +131,7 @@ cropped_test = remove_jet_and_rescale_pT(data_test_f, n_jets)
 
 
 # make some even smaller datasets to train the validation NN, LCT
-percentage = 0.3
+percentage = 0.1
 
 num_val_epoch_train = int(percentage*cropped_train.shape[0])
 val_epoch_cropped_train = cropped_train[:num_val_epoch_train,:,:]
@@ -185,7 +185,7 @@ opt = "adam"
 mask= False
 cmask = True
 
-learning_rate_trans = 0.0001
+learning_rate_trans = 0.00001
 batch_size = 400
 temperature = .1
 

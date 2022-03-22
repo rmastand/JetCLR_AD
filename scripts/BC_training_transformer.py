@@ -33,8 +33,8 @@ from modules.jet_augs import remove_jet_and_rescale_pT
 from modules.utils import LRScheduler, EarlyStopping
 
 # RUN PARMETERS
-seed = 3
-model_dim = 8
+seed = 4
+model_dim = 512
 
 torch.manual_seed(seed)
 random.seed(seed)
@@ -43,7 +43,7 @@ torch.cuda.empty_cache()
 
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="3"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 device = cuda.get_current_device()
 device.reset()
 
