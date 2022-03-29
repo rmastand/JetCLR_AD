@@ -55,20 +55,22 @@ def plot_nsubs(list_of_jets_1, list_of_jets_2, nbins = 20, title = ""):
     taus_2_21 = taus_2[:,0]
     taus_2_32 = taus_2[:,1]
                
-    bins = np.linspace(0,1,nbins)
-    alpha = 0.3
+    bins = np.linspace(0,1.2,nbins)
+    alpha = 0.7
 
     # plot tau 21
     fig, ax = plt.subplots(1,2, figsize = (14,6))
-    ax[0].hist(taus_1_21, bins = bins, label = "Orig.", alpha = alpha)
-    ax[0].hist(taus_2_21, bins = bins, label = "Mod.", alpha = alpha)
+    ax[0].hist(taus_1_21, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
+    plt.rcParams['hatch.linewidth'] = 2
+    ax[0].hist(taus_2_21, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
     ax[0].set_xlabel("$\\tau_{21}$"+title)
     ax[0].set_ylabel("Counts")
     ax[0].legend()
     
     # plot tau 32
-    ax[1].hist(taus_1_32, bins = bins, label = "Orig.", alpha = alpha)
-    ax[1].hist(taus_2_32, bins = bins, label = "Mod.", alpha = alpha)
+    ax[1].hist(taus_1_32, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
+    plt.rcParams['hatch.linewidth'] = 2
+    ax[1].hist(taus_2_32, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
     ax[1].set_xlabel("$\\tau_{32}$"+title)
     ax[1].set_ylabel("Counts")
     ax[1].legend()
@@ -94,7 +96,7 @@ def plot_mj(list_of_jets_1, list_of_jets_2, bins = np.linspace(0,700,20), title 
     ax.hist(list_of_m2, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
     ax.set_xlabel("Jet mass [GeV]"+title)
     ax.set_ylabel("Counts")
-    ax.legend(loc = "upper left")
+    ax.legend()
     
     fig.show()
     
@@ -110,12 +112,13 @@ def plot_mjj(list_jets1_orig, list_jets2_orig, list_jets1_mod, list_jets2_mod, b
     list_of_mjj_orig = mjj(list_jets1_orig, list_jets2_orig)
     list_of_mjj_mod = mjj(list_jets1_mod, list_jets2_mod)
     
-    alpha = 0.3
+    alpha = 0.7
 
     # plot 
     fig, ax = plt.subplots(1,1, figsize = (6,6))
-    ax.hist(list_of_mjj_orig, bins = bins, label = "Orig.", alpha = alpha)
-    ax.hist(list_of_mjj_mod, bins = bins, label = "Mod.", alpha = alpha)
+    ax.hist(list_of_mjj_orig, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
+    plt.rcParams['hatch.linewidth'] = 2
+    ax.hist(list_of_mjj_mod, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
     ax.set_xlabel("$m_{jj}$"+title)
     ax.set_ylabel("Counts")
     ax.legend()

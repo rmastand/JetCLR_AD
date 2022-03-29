@@ -37,8 +37,8 @@ from modules.utils import LRScheduler, EarlyStopping
 
 
 # RUN PARMETERS
-seed = 2
-model_dim = 128
+seed = 5
+model_dim = 48
 
 torch.manual_seed(seed)
 random.seed(seed)
@@ -60,7 +60,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "SB_ratios_22_03_16/50kS_50kB_dim"+str(model_dim)+"_seed_"+str(seed)+"/"
+exp_id = "SB_ratios_22_03_16/0p1kS_50kB_dim_"+str(model_dim)+"_seed_"+str(seed)+"/"
 
 # set gpu device
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
@@ -86,7 +86,7 @@ print("experiment: "+str(exp_id) , flush=True)
 
 
 path_to_save_dir = "/global/home/users/rrmastandrea/training_data_vf/"
-CLR_dir = "nCLR_sig_50000_nCLR_bkg_50000_n_nonzero_50_n_pad_0_n_jet_2/"
+CLR_dir = "nCLR_sig_100_nCLR_bkg_50000_n_nonzero_50_n_pad_0_n_jet_2/"
 BC_dir = "nBC_sig_85000_nBC_bkg_85000_n_nonzero_50_n_pad_0_n_jet_2/"
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 

@@ -37,8 +37,8 @@ from modules.utils import LRScheduler, EarlyStopping
 
 
 # RUN PARMETERS
-seed = 3
-model_dim = 128
+seed = 4
+model_dim = 48
 
 torch.manual_seed(seed)
 random.seed(seed)
@@ -60,7 +60,7 @@ device.reset()
 # set the number of threads that pytorch will use
 torch.set_num_threads(2)
 
-exp_id = "dim_scan_100k/0p05kS_50kB_dim_"+str(model_dim)+"_seed_"+str(seed)+"/"
+exp_id = "SB_ratios_22_03_16/0p05kS_50kB_dim_"+str(model_dim)+"_seed_"+str(seed)+"/"
 
 
 # set gpu device
