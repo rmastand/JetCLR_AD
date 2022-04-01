@@ -37,7 +37,7 @@ from modules.perf_eval import get_perf_stats, linear_classifier_test, plot_losse
 from modules.neural_net import create_and_run_nn
 
 
-seed = 1
+seed = 4
 torch.manual_seed(seed)
 random.seed(seed)
 np.random.seed(seed)
@@ -45,7 +45,7 @@ torch.cuda.empty_cache()
 
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 device = cuda.get_current_device()
 device.reset()
 
@@ -115,9 +115,9 @@ print( "STS labels shape: " + str( STS_labels.shape ), flush=True)
 # In[3]:
 
 
-model_dim = 48
+model_dim = 128
 
-exp_id = "SB_ratios_22_18_01/0kS_16kB_"+str(model_dim)+"d/"
+exp_id = "SB_ratios_22_01_18/0kS_16kB_"+str(model_dim)+"d/"
 
 
 # set up results directory
@@ -256,6 +256,7 @@ S = np.reshape(M1[:,layer,:], (M1.shape[0]*M1.shape[2],1))
 B = np.reshape(M2[:,layer,:], (M2.shape[0]*M2.shape[2],1))
 
 
+
 plt.figure()
 plt.hist(S, bins, label = "S", alpha = 0.5)
 plt.hist(B, bins, label = "B", alpha = 0.5)
@@ -264,7 +265,7 @@ plt.title("Transformer layer "+str(layer))
 plt.show()
 
 
-# In[11]:
+# In[7]:
 
 
 data_train, labels_train, data_val, labels_val = generate_train_test_val(M1, M2)
@@ -340,7 +341,7 @@ for trait in range(sig_reps.shape[1]): # going through the layers of the transfo
 
 # # Testing the classifier (CWoLa)
 
-# In[16]:
+# In[ ]:
 
 
 # Define the NN parameters
@@ -439,41 +440,93 @@ for f1 in np.linspace(0.5,.99,30):
         
 
 
-# In[17]:
+# In[ ]:
 
+
+cwola_npy_save_dict = "CWoLa_results_npy/dim_"+str(model_dim)+"/"
+
+# save the f1 vals scanned over
+np.save(cwola_npy_save_dict+"f1_vals"+"_seed"+str(seed), f1_vals)
+
+
+for layer in range(3):
+    
+    # save the full sup 
+    np.save(cwola_npy_save_dict+"full_sup_AUC_layer"+str(layer)+"_seed"+str(seed), np.full(len(f1_vals), full_sup_AUC[layer]))
+    np.save(cwola_npy_save_dict+"full_sup_maxsic"+str(layer)+"_seed"+str(seed), np.full(len(f1_vals), full_sup_maxsic[layer]))
+    np.save(cwola_npy_save_dict+"full_sup_FPRatTPR"+str(layer)+"_seed"+str(seed), np.full(len(f1_vals), full_sup_FPRatTPR[layer]))
+    
+    # save the Cwola
+    np.save(cwola_npy_save_dict+"CWoLa_AUC_layer"+str(layer)+"_seed"+str(seed), [max(x, 1.0-x) for x in ROC_AUC_vals[layer]])
+    np.save(cwola_npy_save_dict+"CWoLa_sup_maxsic"+str(layer)+"_seed"+str(seed), maxsic_vals[layer])
+    np.save(cwola_npy_save_dict+"CWoLa_sup_FPRatTPR"+str(layer)+"_seed"+str(seed), FPRatTPR_vals[layer])
+    
+
+
+# In[ ]:
+
+"""
+# Plotting
+
+model_dim = 128
+seed = 1
+
+cwola_npy_save_dict = "CWoLa_results_npy/dim_"+str(model_dim)+"/"
+
+
+full_sup_results_dict = {"AUC":{0:0,1:0,2:0},
+                        "maxsic":{0:0,1:0,2:0},
+                        "FPRatTPR":{0:0,1:0,2:0},}
+
+cwola_results_dict = {"AUC":{0:0,1:0,2:0},
+                        "maxsic":{0:0,1:0,2:0},
+                        "FPRatTPR":{0:0,1:0,2:0},}
+
+
+
+for layer in range(3):
+    full_sup_results_dict["AUC"][layer] = np.load(cwola_npy_save_dict+"full_sup_AUC_layer"+str(layer)+"_seed"+str(seed)+".npy")
+    full_sup_results_dict["maxsic"][layer] = np.load(cwola_npy_save_dict+"full_sup_maxsic"+str(layer)+"_seed"+str(seed)+".npy")
+    full_sup_results_dict["FPRatTPR"][layer] = np.load(cwola_npy_save_dict+"full_sup_FPRatTPR"+str(layer)+"_seed"+str(seed)+".npy")
+    
+    cwola_results_dict["AUC"][layer] = np.load(cwola_npy_save_dict+"CWoLa_AUC_layer"+str(layer)+"_seed"+str(seed)+".npy")
+    cwola_results_dict["maxsic"][layer] = np.load(cwola_npy_save_dict+"CWoLa_sup_maxsic"+str(layer)+"_seed"+str(seed)+".npy")
+    cwola_results_dict["FPRatTPR"][layer] = np.load(cwola_npy_save_dict+"CWoLa_sup_FPRatTPR"+str(layer)+"_seed"+str(seed)+".npy")
+    
+f1_vals = np.load(cwola_npy_save_dict+"f1_vals_seed"+str(seed)+".npy")
 
 pdf_name = "JetCLR_CWoLa_"+str(model_dim)+".pdf"
 pp = PdfPages(pdf_name)
     
 fig = plt.figure()
-for i in range(3):
-    plt.scatter(f1_vals, [max(x, 1.0-x) for x in ROC_AUC_vals[i]], label = "CWoLa "+str(i))
-plt.scatter(f1_vals, np.full(len(f1_vals), full_sup_AUC[i]), label = "Full. Sup.", color = "k")
+for layer in range(3):
+    plt.scatter(f1_vals, cwola_results_dict["AUC"][layer], label = "CWoLa "+str(layer))
+    plt.scatter(f1_vals, full_sup_results_dict["AUC"][layer], label = "Full. Sup."+str(layer))
 plt.legend()
+plt.ylim(0.5, 0.89)
 plt.xlabel("f1")
 plt.ylabel("AUC")
-plt.ylim(0.5, 0.89)
 plt.title(str(model_dim)+"d latent space")
 plt.show()
 pp.savefig(fig)
 
 
 fig = plt.figure()
-for i in range(3):
-    plt.scatter(f1_vals, maxsic_vals[i], label = "CWoLa "+str(i))
-plt.scatter(f1_vals, np.full(len(f1_vals), full_sup_maxsic[i]), label = "Full. Sup.", color = "k")
+for layer in range(3):
+    plt.scatter(f1_vals, cwola_results_dict["maxsic"][layer], label = "CWoLa "+str(layer))
+    plt.scatter(f1_vals, full_sup_results_dict["maxsic"][layer], label = "Full. Sup."+str(layer))
 plt.legend()
 plt.xlabel("f1")
-plt.ylabel("maxSIC")
 plt.ylim(0.95, 2.7)
+plt.ylabel("maxSIC")
 plt.title(str(model_dim)+"d latent space")
 plt.show()
 pp.savefig(fig)
 
 fig = plt.figure()
-for i in range(3):
-    plt.scatter(f1_vals, FPRatTPR_vals[i], label = "CWoLa "+str(i))
-plt.scatter(f1_vals, np.full(len(f1_vals), full_sup_FPRatTPR[i]), label = "Full. Sup.", color = "k")
+for layer in range(3):
+    plt.scatter(f1_vals, cwola_results_dict["FPRatTPR"][layer], label = "CWoLa "+str(layer))
+    plt.scatter(f1_vals, full_sup_results_dict["FPRatTPR"][layer], label = "Full. Sup."+str(layer))
 plt.legend()
 plt.xlabel("f1")
 plt.ylabel("FPR @ TPR = 0.5")
@@ -484,35 +537,4 @@ pp.savefig(fig)
 
 
 pp.close()
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
+"""
