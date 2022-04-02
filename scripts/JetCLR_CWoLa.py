@@ -37,7 +37,7 @@ from modules.perf_eval import get_perf_stats, linear_classifier_test, plot_losse
 from modules.neural_net import create_and_run_nn
 
 
-seed = 4
+seed = 2
 torch.manual_seed(seed)
 random.seed(seed)
 np.random.seed(seed)
@@ -45,7 +45,7 @@ torch.cuda.empty_cache()
 
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="3"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 device = cuda.get_current_device()
 device.reset()
 
@@ -62,10 +62,10 @@ print( "device: " + str( device ), flush=True)
 # In[2]:
 
 
-path_to_save_dir = "/global/home/users/rrmastandrea/training_data/"
+path_to_save_dir = "/global/home/users/rrmastandrea/training_data_vf/"
 
-sig_samp_id = "CWoLa_n_sig_15900_n_bkg_0_n_nonzero_50_n_pad_0_n_jet_2/"
-bkg_samp_id = "CWoLa_n_sig_0_n_bkg_15900_n_nonzero_50_n_pad_0_n_jet_2/"
+sig_samp_id = "nCWoLa_sig_85000_nCWoLa_bkg_0_n_nonzero_50_n_pad_0_n_jet_2/"
+bkg_samp_id = "nCWoLa_sig_0_nCWoLa_bkg_85000_n_nonzero_50_n_pad_0_n_jet_2/"
 
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
@@ -90,13 +90,12 @@ bkg_labels = np.load(path_to_bkg_data+"labels_train.npy")
 STS_data = np.load(path_to_STS+"data.npy")
 STS_labels = np.load(path_to_STS+"labels.npy")
 
-n = 26000
 
 # Crop the data, rescale pt
-cropped_sig_data = remove_jet_and_rescale_pT(sig_data, n_jets)[:n,:,:]
-cropped_bkg_data = remove_jet_and_rescale_pT(bkg_data, n_jets)[:n,:,:]
-sig_labels = sig_labels[:n]
-bkg_labels = bkg_labels[:n]
+cropped_sig_data = remove_jet_and_rescale_pT(sig_data, n_jets)
+cropped_bkg_data = remove_jet_and_rescale_pT(bkg_data, n_jets)
+sig_labels = sig_labels
+bkg_labels = bkg_labels
 
 cropped_STS_data = remove_jet_and_rescale_pT(STS_data, n_jets)
 
@@ -115,9 +114,9 @@ print( "STS labels shape: " + str( STS_labels.shape ), flush=True)
 # In[3]:
 
 
-model_dim = 128
+model_dim = 48
 
-exp_id = "SB_ratios_22_01_18/0kS_16kB_"+str(model_dim)+"d/"
+exp_id = "SB_ratios_22_03_16/0kS_50kB_dim_"+str(model_dim)+"_seed_"+str(seed)+"/"
 
 
 # set up results directory
