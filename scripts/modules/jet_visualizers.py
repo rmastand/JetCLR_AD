@@ -36,67 +36,114 @@ def plot_jets_phase_plane(jet1, jet2, s, xlims=(-.5,.5), ylims=(-.5,.5)):
     
     return fig
     
-def plot_nsubs(list_of_jets_1, list_of_jets_2, nbins = 20, title = ""):
+def plot_nsubs(orig_hardest, mod_hardest, orig_second, mod_second, nbins = 20, title = ""):
     """
     INPUTS
     2 numpy arrays of size (# jets, 3, # constituents)where the 1-index goes through (pT, eta, phi)
     """
     
     # convert the pT, eta, phi coords to E, px py, px
-    list_of_jets_1_cart = convert_constits_coords(list_of_jets_1)
-    list_of_jets_2_cart = convert_constits_coords(list_of_jets_2)
+    list_of_orig_hardest_cart = convert_constits_coords(orig_hardest)
+    list_of_mod_hardest_cart = convert_constits_coords(mod_hardest)
+    list_of_orig_second_cart = convert_constits_coords(orig_second)
+    list_of_mod_second_cart = convert_constits_coords(mod_second)
     
     # calculate the n_jettiness
-    taus_1 = nsub(list_of_jets_1_cart)
-    taus_2 = nsub(list_of_jets_2_cart)
+    taus_orig_hardest = nsub(list_of_orig_hardest_cart)
+    taus_mod_hardest = nsub(list_of_mod_hardest_cart)
+    taus_orig_second = nsub(list_of_orig_second_cart)
+    taus_mod_second = nsub(list_of_mod_second_cart)
     
-    taus_1_21 = taus_1[:,0]
-    taus_1_32 = taus_1[:,1]
-    taus_2_21 = taus_2[:,0]
-    taus_2_32 = taus_2[:,1]
+    
+    taus_orig_hardest_21 = taus_orig_hardest[:,0]
+    taus_orig_hardest_32 = taus_orig_hardest[:,1]
+    taus_mod_hardest_21 = taus_mod_hardest[:,0]
+    taus_mod_hardest_32 = taus_mod_hardest[:,1]
+    
+    taus_orig_second_21 = taus_orig_second[:,0]
+    taus_orig_second_32 = taus_orig_second[:,1]
+    taus_mod_second_21 = taus_mod_second[:,0]
+    taus_mod_second_32 = taus_mod_second[:,1]
                
-    bins = np.linspace(0,1.2,nbins)
+    bins = np.linspace(0,1.1,nbins)
     alpha = 0.7
 
     # plot tau 21
-    fig, ax = plt.subplots(1,2, figsize = (14,6))
-    ax[0].hist(taus_1_21, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
+    fig21, ax = plt.subplots(1,2, figsize = (14,6))
+    ax[0].hist(taus_orig_hardest_21, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
     plt.rcParams['hatch.linewidth'] = 2
-    ax[0].hist(taus_2_21, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
-    ax[0].set_xlabel("$\\tau_{21}$"+title)
+    ax[0].hist(taus_mod_hardest_21, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
+    ax[0].set_xlabel("$\\tau_{21}$, hardest jet")
     ax[0].set_ylabel("Counts")
     ax[0].legend()
     
-    # plot tau 32
-    ax[1].hist(taus_1_32, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
+    ax[1].hist(taus_orig_second_21, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
     plt.rcParams['hatch.linewidth'] = 2
-    ax[1].hist(taus_2_32, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
-    ax[1].set_xlabel("$\\tau_{32}$"+title)
+    ax[1].hist(taus_mod_second_21, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
+    ax[1].set_xlabel("$\\tau_{21}$, second jet")
+    ax[1].set_ylabel("Counts")
+    plt.ylim(0,550)
+    ax[1].legend()
+    
+
+
+    fig21.show()
+    
+    bins = np.linspace(0,1.1,nbins)
+    
+    # plot tau 32
+    fig32, ax = plt.subplots(1,2, figsize = (14,6))
+    ax[0].hist(taus_orig_hardest_32, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
+    plt.rcParams['hatch.linewidth'] = 2
+    ax[0].hist(taus_mod_hardest_32, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
+    ax[0].set_xlabel("$\\tau_{32}$, hardest jet")
+    ax[0].set_ylabel("Counts")
+    ax[0].legend()
+    
+    ax[1].hist(taus_orig_second_32, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
+    plt.rcParams['hatch.linewidth'] = 2
+    ax[1].hist(taus_mod_second_32, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
+    ax[1].set_xlabel("$\\tau_{32}$, second jet")
     ax[1].set_ylabel("Counts")
     ax[1].legend()
     
-    fig.show()
+
+    fig32.show()
     
-def plot_mj(list_of_jets_1, list_of_jets_2, bins = np.linspace(0,700,20), title = ""):
+    
+    
+    return fig21, fig32
+
+
+    
+def plot_mj(list_of_hardest_orig, list_of_hardest_mod,list_of_second_orig, list_of_second_mod, bins = np.linspace(0,700,20), title = ""):
     """
     INPUTS
     2 numpy arrays of size (# jets, 3, # constituents)where the 1-index goes through (pT, eta, phi)
     """
     
     # calculate the jet mass
-    list_of_m1 = mj(list_of_jets_1)
-    list_of_m2 = mj(list_of_jets_2)
+    list_of_hardest_orig = mj(list_of_hardest_orig)
+    list_of_hardest_mod = mj(list_of_hardest_mod)
+    list_of_second_orig = mj(list_of_second_orig)
+    list_of_second_mod = mj(list_of_second_mod)
     
     alpha = .7
 
-    # plot 
-    fig, ax = plt.subplots(1,1, figsize = (6,6))    
-    ax.hist(list_of_m1, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
+    fig, ax = plt.subplots(1,2, figsize = (14,6))
+    ax[0].hist(list_of_hardest_orig, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
     plt.rcParams['hatch.linewidth'] = 2
-    ax.hist(list_of_m2, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
-    ax.set_xlabel("Jet mass [GeV]"+title)
-    ax.set_ylabel("Counts")
-    ax.legend()
+    ax[0].hist(list_of_hardest_mod, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
+    ax[0].set_xlabel("Mass [GeV], hardest jet")
+    ax[0].set_ylabel("Counts")
+    ax[0].legend()
+    
+    ax[1].hist(list_of_second_orig, bins = bins, label = "Original Events", alpha = alpha,color = "mediumseagreen")
+    plt.rcParams['hatch.linewidth'] = 2
+    ax[1].hist(list_of_second_mod, bins = bins, label = "Modified Events", color = "darkcyan" , histtype = "step", hatch="/", linewidth = 2)
+    ax[1].set_xlabel("Mass [GeV], second jet")
+    ax[1].set_ylabel("Counts")
+    ax[1].legend()
     
     fig.show()
     
