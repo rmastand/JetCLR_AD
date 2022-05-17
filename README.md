@@ -15,3 +15,13 @@ Approximate pipeline:
 ```BC_training_transformer.py```: trains a transformer network to directly do a SvB classifiction task in a latent space with the BCE Loss (the "Trans+BC" network).
 
 ```event_space_BC.ipynb```: runs the benchmark binary classfication tasks (fully connected network + linear classifier test) in the event space.
+
+```dim_scan_plots.ipynb```: Plots rejection vs TPR for the transformer trained on a given latent space dimension.
+
+```SvB_plots.ipynb```: Plots rejection vs TPR for the transformer trained on with a given S/B value. Also plots training metrics (ROC AUC, max(SIC), and FPR at TPR = 0.5) as a function of training epoch.
+
+```JetCLR_CWoLa.py```:
+
+```JetCLR_CWoLa_event_space```:
+
+```CWoLa_plots.ipynb```: 
