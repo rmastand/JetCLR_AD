@@ -316,7 +316,7 @@ Plot the training losses
 
 """
 
-if run_transformer:
+if run_BC_transformer:
 
     losses_pdf_name = expt_dir + "BCLR_training_losses.pdf"
     pp = PdfPages(losses_pdf_name)
