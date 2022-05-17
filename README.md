@@ -25,3 +25,5 @@ Approximate pipeline:
 ```JetCLR_CWoLa_event_space```:
 
 ```CWoLa_plots.ipynb```: 
+
+```sanity_checks```:
