@@ -37,7 +37,7 @@ from modules.perf_eval import get_perf_stats, linear_classifier_test, plot_losse
 from modules.neural_net import create_and_run_nn
 
 
-seed = 1
+seed = 5
 #torch.manual_seed(seed)
 #random.seed(seed)
 #np.random.seed(seed)

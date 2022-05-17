@@ -33,7 +33,7 @@ def pandas_to_unclustered_particles(input_frame):
     list_of_events = []
     for row in range(dataset.shape[0]):
         if row % 1000 == 0:
-            print("Reading row", row, "of", dataset.shape[0], "...")
+            print("Parsing row", row, "of", dataset.shape[0], "...")
         loc_row = dataset.iloc[row]
         collision =  np.array([(loc_row[3*i],loc_row[3*i+1],loc_row[3*i+2],0) for i in range(int(len(loc_row)/3))],
                      np.dtype([('pT', 'f8'), ('eta', 'f8'), ('phi', 'f8'), ('mass', 'f8')]))  
