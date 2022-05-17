@@ -6,7 +6,7 @@ Approximate pipeline:
 
 ```data_prep.py```: Processes the LHC Olympics dataset into a more compact form. Creates a text file of clustered jets.
 
-```data_preprocess.ipynb```: Makes selection cuts on the proccessed data and creates datasets with a setable number of signal and background events
+```data_preprocessing.ipynb```: Makes selection cuts on the proccessed data and creates datasets with a setable number of signal and background events
 
 ```aug_testing.ipynb```: Allows for visualization of jet augmentations in the $\eta$-$\phi$ plane. Also shows the effect of augmentations on jet observables $\tau$, $m$, ...
 
