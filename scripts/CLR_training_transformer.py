@@ -387,9 +387,6 @@ if run_transformer:
                 Run a LCT for signal vs background (supervised)
                 """
 
-                print("Training shape:", val_epoch_cropped_train.shape)
-
-
                 lct_train_reps = F.normalize( net.forward_batchwise( torch.Tensor( val_epoch_cropped_train ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
                 lct_test_reps = F.normalize( net.forward_batchwise( torch.Tensor( val_epoch_cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
 
@@ -418,7 +415,6 @@ if run_transformer:
                 lct_train_reps = F.normalize( net.forward_batchwise( torch.Tensor( val_epoch_cropped_train ).transpose(1,2), data_test_f.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
                 lct_test_reps = F.normalize( net.forward_batchwise( torch.Tensor( val_epoch_cropped_val ).transpose(1,2), data_val.shape[0], use_mask=mask, use_continuous_mask=cmask ).detach().cpu(), dim=-1  ).numpy()
                
-                print(lct_train_reps.shape)
                 print("Doing a short NN...")
                 num_epochs_nn = 800
                 batch_size_nn = 400
