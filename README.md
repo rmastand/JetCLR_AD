@@ -5,7 +5,7 @@ Code base for the JetCLR tool, providing a framework for the contrastive learnin
 
 ## Approximate pipeline
 
-### Data Preprocessing
+### Preprocessing the data 
 
 ```data_prep.py```: Processes the LHC Olympics dataset into a more compact form. Creates a text file of clustered jets.
 
