@@ -23,6 +23,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
+from matplotlib.backends.backend_pdf import PdfPages
 
 # load torch modules
 import torch
@@ -222,7 +223,7 @@ train_den_only = False
 check_with_LCT = True # run a LCT at each validation epoch
 check_with_NN = True
 
-n_epochs = 800
+n_epochs = 50
 loss_check_epoch = 10  # do validation loss, run a LCT and NN on the current reps
 verbal_epoch = 10
 
@@ -511,7 +512,7 @@ if run_transformer:
                              "LC transformer"))
     plot_LCT_stats.append((lct_auc_num_jets[0], lct_auc_num_jets[2],
                             "LC hidden layer"))
-    plot_LCT_stats.append((lct_auc_num_jets[0], lct_auc_num_jets[constit_num][3],
+    plot_LCT_stats.append((lct_auc_num_jets[0], lct_auc_num_jets[3],
                             "LC output layer"))
 
     fig = plot_losses(plot_LCT_stats, "ROC Area", False)  

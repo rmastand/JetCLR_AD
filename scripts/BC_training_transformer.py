@@ -23,6 +23,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
+from matplotlib.backends.backend_pdf import PdfPages
 
 # load torch modules
 import torch
@@ -166,7 +167,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau( netBC.optimizer, factor=
 Define training parameters
 """
 
-n_epochs = 5000
+n_epochs = 100
 loss_check_epoch = 10
 verbal_epoch = 10
 run_BC_transformer = True
