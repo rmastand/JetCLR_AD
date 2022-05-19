@@ -1,6 +1,35 @@
 # JetCLR
 Code base for the JetCLR tool, providing a framework for the contrastive learning of jet observables in high-energy particle phenomenology.
 
+JetCLR uses a permutation-invariant transformer-encoder network and a contrastive loss function to map jet constituents to a representation space which is approximately invariant to a set of symmetries and augmentations of the jet data, and is discriminant within the dataset it is optimised on. The symmetries and augmentations are coded in scripts/modules/jet_augs.py, they are:
+
+- **symmetries**:
+  - jet-wide rotations in the rapidity-azimuthal plane, around the transverse-momentum-weighted centroid of each jet
+  - event-wide translations in the rapidity-azimuthal plane
+  - permutation invariance of the jet constituents, this is ensured by the network architecture
+- **augmentations**:
+  - smearing of constituent coordinates, inversely proportional to their transverse momentum
+  - collinear splittings of jet constituents
+
+The scheme for optimising the network is inspired by the [SimCLR1 paper](https://arxiv.org/abs/2002.05709). The mapping to the new representation space is entirely self-supervised, using only the physically-motivated invariances to transformations and augmentations of the data. Truth labels are not used in the optimisation of the JetCLR network.
+
+For questions/comments about the code contact: rmastand@berkeley.edu or dillon@thphys.uni-heidelberg.de
+
+---
+
+This code was written for the paper: 
+
+Self-supervised Anomaly Detection for New Physics  
+www  
+Barry M. Dillon, Radha Mastandrea, and Benjamin Nachman  
+
+
+The [first iteration of this repository](https://github.com/bmdillon/JetCLR) was written for the paper:
+
+Symmetries, Safety, and Self-Supervision  
+https://arxiv.org/abs/2108.04253   
+Barry M. Dillon, Gregor Kasieczka, Hans Olischlager, Tilman Plehn, Peter Sorrenson, and Lorenz Vogel  
+
 ***
 
 ## Approximate pipeline
