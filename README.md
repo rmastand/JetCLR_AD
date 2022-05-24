@@ -20,7 +20,7 @@ For questions/comments about the code contact: rmastand@berkeley.edu or dillon@t
 This code was written for the paper: 
 
 Self-supervised Anomaly Detection for New Physics  
-www  
+https://arxiv.org/abs/2205.10380   
 Barry M. Dillon, Radha Mastandrea, and Benjamin Nachman  
 
 
