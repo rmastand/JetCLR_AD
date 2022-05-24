@@ -60,7 +60,7 @@ Barry M. Dillon, Gregor Kasieczka, Hans Olischlager, Tilman Plehn, Peter Sorrens
 
 ```JetCLR_CWoLa.py```: runs a CWoLA anomaly detection procedure in the latent space
 
-```JetCLR_CWoLa_event_space```: runs a CWoLA anomaly detection procedure in the event space
+```JetCLR_CWoLa_event_space.ipynb```: runs a CWoLA anomaly detection procedure in the event space
 
 ```CWoLa_plots.ipynb```: plots training metrics (ROC AUC, max(SIC), and FPR at TPR = 0.5) as a function of the anomaly / signal fraction
 
