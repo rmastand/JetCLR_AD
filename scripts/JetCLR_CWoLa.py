@@ -14,6 +14,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import time
+from sklearn.linear_model import Ridge
+from sklearn.metrics import roc_curve
 
 # load torch modules
 import torch
@@ -25,6 +27,8 @@ from modules.jet_augs import remove_jet_and_rescale_pT
 from modules.transformer import Transformer
 from modules.neural_net import create_and_run_nn
 from modules.CWoLa_helpers import generate_mixed_sample, generate_train_test_val
+from modules.post_processing import calc_auc_and_macSIC, calc_FPR_at_TPR
+
 
 seed = 1
 torch.manual_seed(seed)
@@ -33,7 +37,7 @@ np.random.seed(seed)
 torch.cuda.empty_cache()
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 device = cuda.get_current_device()
 device.reset()
 
@@ -43,6 +47,8 @@ torch.set_num_threads(2)
 device = torch.device( "cuda" if torch.cuda.is_available() else "cpu")
 print( "device: " + str( device ), flush=True)
 
+run_LCT = True
+
 
 """
 
@@ -50,7 +56,7 @@ Load in the data and crop
 
 """
 
-path_to_save_dir = "/global/home/users/rrmastandrea/training_data_vf/"
+path_to_save_dir = "/global/home/users/rrmastandrea/MJetCLR/training_data_vf/"
 
 sig_samp_id = "nCWoLa_sig_85000_nCWoLa_bkg_0_n_nonzero_50_n_pad_0_n_jet_2/"
 bkg_samp_id = "nCWoLa_sig_0_nCWoLa_bkg_85000_n_nonzero_50_n_pad_0_n_jet_2/"
@@ -108,7 +114,7 @@ Load in the transformer net
 
 """
 
-model_dim = 48
+model_dim = 128
 # location of the saved transformer net
 exp_id = "SB_ratios_22_04_10/0kS_50kB_dim_"+str(model_dim)+"_seed_"+str(seed)+"/"
 
@@ -199,48 +205,49 @@ for trait in range(first_half_sig_reps.shape[1]): # going through the layers of 
     
     print("On layer", trait)
     
+    if not run_LCT:
+        # Run the NN
+        performance_stats = create_and_run_nn(device, input_shape, num_epochs, batch_size, update_epochs, lr, 
+                                      data_train[:,trait,:], labels_train, 
+                                      data_val[:,trait,:], labels_val,
+                                      STS_reps[:,trait,:], STS_labels, 
+                                      verbose = True, early_stop = True, LRschedule = False)
 
-    performance_stats = create_and_run_nn(device, input_shape, num_epochs, batch_size, update_epochs, lr, 
-                          data_train[:,trait,:], labels_train, 
-                          data_val[:,trait,:], labels_val,
-                          STS_reps[:,trait,:], STS_labels, 
-                          verbose = True, early_stop = True, LRschedule = False)
-        
+        # Plot the output losses   
+        plt.figure()
+        plt.plot(performance_stats["epochs"],performance_stats["losses"], label = "loss")
+        plt.plot(performance_stats["val_epochs"],performance_stats["val_losses"], label = "val loss")
+        plt.xlabel("Epochs")
+        plt.ylabel("Losses")
+        plt.yscale("log")
+        plt.legend()
+        plt.show()
 
-    # Plot the output losses   
+        loc_fpr = performance_stats["fpr"]
+        loc_tpr = performance_stats["tpr"]
+    
+   
+    else: 
+        # Run a LCT
+        ridge = Ridge(alpha=1.0)
+        ridge.fit(data_train[:,trait,:], labels_train)
+
+        # make the prediction
+        predictions = ridge.predict(STS_reps[:,trait,:])
+        loc_fpr, loc_tpr, _ = roc_curve(STS_labels, predictions)
+    
+
     plt.figure()
-    plt.plot(performance_stats["epochs"],performance_stats["losses"], label = "loss")
-    plt.plot(performance_stats["val_epochs"],performance_stats["val_losses"], label = "val loss")
-    plt.xlabel("Epochs")
-    plt.ylabel("Losses")
-    plt.yscale("log")
-    plt.legend()
-    plt.title(trait)
-    plt.show()
-
-    plt.figure()
-    plt.plot(performance_stats["tpr"], 1.0/performance_stats["fpr"])
+    plt.plot(loc_tpr, 1.0/loc_fpr)
     plt.yscale("log")
     plt.xlabel("True Positive Rate")
     plt.ylabel("1/(False Positive Rate)")
-    plt.title(trait)
     plt.show()
 
-    print("Accuracy of the network: %d %%" % (100.00 *performance_stats["acc"]))
-    print("ROC AUC:", performance_stats["auc"])
-    
-    full_sup_AUC[trait] = performance_stats["auc"]
-    
-    SIC = performance_stats["tpr"]/np.sqrt(performance_stats["fpr"])
-    finite_SIC = SIC[np.isfinite(SIC)]
-    full_sup_maxsic[trait] = np.max(finite_SIC)
-    
-    dist_from_fixed_tpr = np.abs(performance_stats["tpr"] - fixed_TPR)
-    min_dist_ind = np.where(dist_from_fixed_tpr == np.min(dist_from_fixed_tpr))[0][0]
-    full_sup_FPRatTPR[trait] = np.sqrt(performance_stats["fpr"][min_dist_ind])
-    
-    print(performance_stats["tpr"][min_dist_ind],performance_stats["fpr"][min_dist_ind])
-    
+
+    full_sup_AUC[trait], full_sup_maxsic[trait] = calc_auc_and_macSIC(loc_fpr, loc_tpr)
+    full_sup_FPRatTPR[trait] = calc_FPR_at_TPR(loc_fpr, loc_tpr)
+    print("ROC AUC:", full_sup_AUC[trait])
     
 """
 
@@ -268,7 +275,12 @@ f1_to_probe = [0, 0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 
 
 for f1 in f1_to_probe:
     
-    print("Starting CWoLa training run with f1 =", f1)
+    if run_LCT:
+        print("Starting LCT CWoLa training run with f1 =", f1)
+    else:
+        print("Starting FCN CWoLa training run with f1 =", f1)
+        
+        
     f1_vals.append(f1)
     
     if f1 == 0: # weird bug unless this is manually dne
@@ -311,45 +323,58 @@ for f1 in f1_to_probe:
             plt.legend()
             plt.title("Transformer layer "+str(trait))
             plt.show()
+            
+        if not run_LCT:
 
-        performance_stats = create_and_run_nn(device, input_shape, num_epochs, batch_size, update_epochs, lr, 
-                              data_train[:,trait,:], labels_train, 
-                              data_val[:,trait,:], labels_val,
-                              STS_reps[:,trait,:], STS_labels, 
-                              verbose = True, early_stop = True, LRschedule = False)
+            performance_stats = create_and_run_nn(device, input_shape, num_epochs, batch_size, update_epochs, lr, 
+                                  data_train[:,trait,:], labels_train, 
+                                  data_val[:,trait,:], labels_val,
+                                  STS_reps[:,trait,:], STS_labels, 
+                                  verbose = True, early_stop = True, LRschedule = False)
 
-        if visualize:
-            # Plot the output losses   
-            plt.figure()
-            plt.plot(performance_stats["epochs"],performance_stats["losses"], label = "loss")
-            plt.plot(performance_stats["val_epochs"],performance_stats["val_losses"], label = "val loss")
-            plt.xlabel("Epochs")
-            plt.ylabel("Losses")
-            plt.yscale("log")
-            plt.legend()
-            plt.title(trait)
-            plt.show()
+            if visualize:
+                # Plot the output losses   
+                plt.figure()
+                plt.plot(performance_stats["epochs"],performance_stats["losses"], label = "loss")
+                plt.plot(performance_stats["val_epochs"],performance_stats["val_losses"], label = "val loss")
+                plt.xlabel("Epochs")
+                plt.ylabel("Losses")
+                plt.yscale("log")
+                plt.legend()
+                plt.title(trait)
+                plt.show()
 
-            plt.figure()
-            plt.plot(performance_stats["tpr"], 1.0/performance_stats["fpr"])
-            plt.yscale("log")
-            plt.xlabel("True Positive Rate")
-            plt.ylabel("1/(False Positive Rate)")
-            plt.title(trait)
-            plt.show()
+                plt.figure()
+                plt.plot(performance_stats["tpr"], 1.0/performance_stats["fpr"])
+                plt.yscale("log")
+                plt.xlabel("True Positive Rate")
+                plt.ylabel("1/(False Positive Rate)")
+                plt.title(trait)
+                plt.show()
+                
+            loc_fpr = performance_stats["fpr"]
+            loc_tpr = performance_stats["tpr"]
 
-        print("Accuracy of the network: %d %%" % (100.00 *performance_stats["acc"]))
-        print("ROC AUC:", performance_stats["auc"])
-        
-        ROC_AUC_vals[trait].append(performance_stats["auc"])
-        
-        SIC = performance_stats["tpr"]/np.sqrt(performance_stats["fpr"])
-        finite_SIC = SIC[np.isfinite(SIC)]
-        maxsic_vals[trait].append(np.max(finite_SIC))
+            
+        else:
+            
+            ridge = Ridge(alpha=1.0)
+            ridge.fit(data_train[:,trait,:], labels_train)
+            # make the prediction
+            predictions = ridge.predict(STS_reps[:,trait,:])
+            loc_fpr, loc_tpr, _ = roc_curve(STS_labels, predictions)  
+            
+            
+            
+        loc_AUC, loc_maxsic = calc_auc_and_macSIC(loc_fpr, loc_tpr)
+        loc_FPRatTPR = calc_FPR_at_TPR(loc_fpr, loc_tpr)
 
-        dist_from_fixed_tpr = np.abs(performance_stats["tpr"] - fixed_TPR)
-        min_dist_ind = np.where(dist_from_fixed_tpr == np.min(dist_from_fixed_tpr))[0][0]
-        FPRatTPR_vals[trait].append(np.sqrt(performance_stats["fpr"][min_dist_ind]))
+
+        print("ROC AUC:", loc_AUC)
+
+        ROC_AUC_vals[trait].append(loc_AUC)
+        maxsic_vals[trait].append(loc_maxsic)
+        FPRatTPR_vals[trait].append(loc_FPRatTPR)
     
         print()
 
@@ -361,8 +386,12 @@ Save the data
 
 """
 
+if not run_LCT:
+    cwola_npy_save_dict = "/global/home/users/rrmastandrea/MJetCLR/CWoLa_results_npy/dim_"+str(model_dim)+"/"
+else: 
+    cwola_npy_save_dict = "/global/home/users/rrmastandrea/MJetCLR/CWoLa_results_npy/linear_dim_"+str(model_dim)+"/"
 
-cwola_npy_save_dict = "CWoLa_results_npy/dim_"+str(model_dim)+"/"
+
 
 # save the f1 vals scanned over
 np.save(cwola_npy_save_dict+"f1_vals"+"_seed"+str(seed), f1_vals)
