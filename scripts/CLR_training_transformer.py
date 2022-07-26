@@ -42,7 +42,7 @@ from modules.utils import LRScheduler, EarlyStopping
 
 # RUN PARMETERS
 seed = 5
-model_dim = 48
+model_dim = 128
 
 # torch params + computing settings
 torch.manual_seed(seed)
@@ -51,7 +51,7 @@ np.random.seed(seed)
 torch.cuda.empty_cache()
 
 from numba import cuda 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 device = cuda.get_current_device()
 device.reset()
 
@@ -70,7 +70,7 @@ Directory paths
 """
 
 # path to the output directory
-exp_id = "SB_ratios_22_04_10/29kS_50kB_dim_"+str(model_dim)+"_seed_"+str(seed)+"/"
+exp_id = "subtract_colsplit/50kS_50kB_dim_"+str(model_dim)+"_seed_"+str(seed)+"/"
 
 # set up results directory
 base_dir = "/global/home/users/rrmastandrea/MJetCLR/"  # change this to your working directory
@@ -92,8 +92,8 @@ Load in the processed data
 
 """
 
-path_to_save_dir = "/global/home/users/rrmastandrea/training_data_vf/"
-CLR_dir = "nCLR_sig_10000_nCLR_bkg_10000_n_nonzero_50_n_pad_0_n_jet_2/"
+path_to_save_dir = "/global/home/users/rrmastandrea/MJetCLR/training_data_vf/"
+CLR_dir = "nCLR_sig_50000_nCLR_bkg_50000_n_nonzero_50_n_pad_0_n_jet_2/"
 BC_dir = "nBC_sig_85000_nBC_bkg_85000_n_nonzero_50_n_pad_0_n_jet_2/"
 TEST_dir = "STANDARD_TEST_SET_n_sig_10k_n_bkg_10k_n_nonzero_50_n_pad_0_n_jet_2/"
 
@@ -185,7 +185,7 @@ opt = "adam"
 mask= False
 cmask = True
 
-learning_rate_trans = 0.001
+learning_rate_trans = 0.0001
 batch_size = 400
 temperature = .1
 
@@ -198,7 +198,7 @@ if early_stop:
 rot = True # rotations
 trs = False # translations
 dis = True # distortion
-col = True # collinear
+col = False # collinear
 
 center = "J1_phi_only_pi_2"
 
@@ -223,7 +223,7 @@ train_den_only = False
 check_with_LCT = True # run a LCT at each validation epoch
 check_with_NN = True
 
-n_epochs = 50
+n_epochs = 800
 loss_check_epoch = 10  # do validation loss, run a LCT and NN on the current reps
 verbal_epoch = 10
 
